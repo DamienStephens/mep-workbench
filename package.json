@@ -1,0 +1,9 @@
+{
+  "name": "mep-workbench",
+  "version": "2.6.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests.mjs && node conductor-fill-tests.mjs && node parallel-tests.mjs && node ui-tests.mjs && node voltage-tests.mjs && node theme-tests.mjs && node termination-tests.mjs && node service-tests.mjs && node ambient-tests.mjs && node compact-tests.mjs && node modern-tests.mjs && node monochrome-tests.mjs && node extended-conductor-tests.mjs && node integrated-sizing-tests.mjs && node transformer-protection-tests.mjs && node calculation-records-tests.mjs && node pdf-report-tests.mjs && node worked-examples-tests.mjs && node workflow-ui-tests.mjs && node ocpd-rating-tests.mjs && node protection-simple-tests.mjs && node breaker-pair-tests.mjs && node breaker-pair-ui-tests.mjs && node current-display-tests.mjs && node record-dialog-tests.mjs && node root-three-tests.mjs && node voltage-drop-pf-tests.mjs"
+  }
+}

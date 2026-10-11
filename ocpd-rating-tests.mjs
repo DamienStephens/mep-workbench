@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import * as calc from './dist/calc.js';
+import {systemOptions,voltageOptions} from './dist/voltage.js';
+import {createSnapshot,buildSummary,summaryFromSnapshot,createRecordStore} from './dist/calculation-records.js';
+import {createPDF} from './dist/pdf-report.js';
+import {transformerProtection,evaluateTransformerProtection,migrateProtectionState,transformerBreakerOptions,transformerOcpdRatings,secondaryRuleConditions} from './dist/transformer-protection.js';
+const base={ocpd:20,terminal:75,ambient:30,parallelSets:1,configuration:'single-phase-2-wire',material:'copper'};
+const value=(r,k)=>r.results.find(x=>x.label===k)?.value;
+const r=calc.conductor(base);assert.equal(r.error,undefined);assert.equal(value(r,'Total OCPD'),20);assert.equal(value(r,'Copper conductor per set'),'12 AWG');assert.ok(!r.results.some(x=>x.label==='Design load'));assert.doesNotMatch(r.steps.join(' '),/multiplier|Design load/);assert.match(r.warnings.join(' '),/continuous-load and equipment requirements/);
+assert.equal(value(calc.conductor({...base,ocpd:25}),'Total OCPD'),25);
+assert.equal(value(calc.conductor({...base,ocpd:25}),'Copper conductor per set'),'10 AWG');
+for(const ocpd of [undefined,null,'',false,true,0,-1,20.5,21,4001,5000,Infinity,NaN])assert.ok(calc.conductor({...base,ocpd}).error,`Reject explicit ${ocpd}`);
+assert.ok(calc.conductor({...base,ocpd:undefined,load:20}).error,'No engine auto-selection from a legacy load');
+for(const ocpd of calc.standardOcpdRatings){const p={...base,ocpd,parallelSets:20},out=calc.conductor(p);assert.equal(out.error,undefined);assert.equal(value(out,'Total OCPD'),ocpd);assert.ok(value(out,'Combined usable ampacity')>=ocpd);}
+const drop={...base,voltageDropEnabled:true,current:20,length:300,phase:1,voltage:120,target:3};
+const d=calc.conductor(drop);assert.equal(d.error,undefined);assert.equal(value(d,'Voltage-drop current'),20);assert.notEqual(value(d,'Copper conductor per set'),'12 AWG');assert.match(d.steps.join(' '),/20 A selected OCPD rating/);assert.doesNotMatch(JSON.stringify(d),/preadjusted design load/);
+assert.match(calc.conductor({...drop,current:20.01}).error,/selected OCPD rating/);
+assert.equal(calc.conductor({...drop,current:0}).error,undefined);
+const old={...base,load:21,ocpd:0};const serialized=JSON.stringify(old);const migrated=calc.migrateConductorState(old);assert.equal(migrated.ocpd,25);assert.equal(migrated.load,undefined);assert.match(migrated.migrationNotice,/Previous load converted/);assert.equal(JSON.stringify(old),serialized);
+assert.equal(calc.migrateConductorState({...old,ocpd:20}).ocpd,20,'Preserve a selected rating even if old load was larger; user must verify');
+for(const load of ['',null,NaN,-1,0,4001])assert.ok(calc.conductor(calc.migrateConductorState({...old,load})).error);
+assert.deepEqual(calc.migrateConductorState(migrated),migrated,'Idempotent');
+assert.equal(calc.migrateConductorState({...old,load:10,continuous:16,ccc:4}).ocpd,30);
+const source=fs.readFileSync(new URL('./dist/app.js',import.meta.url),'utf8').replace(/^import[^\n]+\n/gm,'').replace(/route\(\);\s*$/,'');
+function ui(saved={}){const context=vm.createContext({calc,systemOptions,voltageOptions,createSnapshot,buildSummary,summaryFromSnapshot,createRecordStore,transformerProtection,evaluateTransformerProtection,migrateProtectionState,transformerBreakerOptions,transformerOcpdRatings,secondaryRuleConditions,structuredClone,console,localStorage:{getItem:()=>JSON.stringify(saved)},window:{addEventListener(){}}});vm.runInContext(source+';globalThis.ui={states,modules,defaults,fieldHTML};',context);return context.ui;}
+const u=ui({conductor:old}),m=u.modules.find(x=>x.id==='conductor');assert.equal(u.modules.length,9);assert.equal(u.defaults(m).ocpd,30);assert.equal(u.defaults(m).load,undefined);assert.equal(u.states.conductor.ocpd,25);assert.equal(u.states.conductor.load,undefined);
+const html=m.fields.map(f=>u.fieldHTML(f,u.states.conductor)).join('');assert.equal((html.match(/name="ocpd"/g)||[]).length,1);assert.match(html,/OCPD Rating/);assert.doesNotMatch(html,/name="load"|Auto-select/);assert.equal(m.fields.find(f=>f.key==='ocpd').options.length,calc.standardOcpdRatings.length);
+const service=u.modules.find(x=>x.id==='service');assert.ok(service.fields.some(f=>f.key==='load'));assert.equal(service.fields.find(f=>f.key==='ocpd').value,0);
+const state={...u.defaults(m),ocpd:20,configuration:'single-phase-2-wire'};const snapshot=createSnapshot(m,state,calc.conductor(state));assert.equal(snapshot.inputs.load,undefined);assert.ok(!snapshot.inputRows.some(x=>x.label==='Load'||x.label==='Design load'));const text=summaryFromSnapshot(snapshot);assert.match(text,/OCPD Rating: 20 A/);assert.doesNotMatch(text,/Design load:|No additional 125%|Enter the final design load/);assert.match(new TextDecoder().decode(createPDF(snapshot)),/OCPD Rating/);
+console.log('Explicit OCPD: strict ratings, #12 Cu at 20 A, no auto/load, current guard, migration, nine-module UI, summary and PDF checks passed.');
