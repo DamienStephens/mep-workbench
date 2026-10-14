@@ -1,4 +1,4 @@
-import { createSnapshot, buildSummary, summaryFromSnapshot, createRecordStore } from './dist/calculation-records.js';
+import { createSnapshot, buildSummary, summaryFromSnapshot, copySummaryFromSnapshot, createRecordStore } from './dist/calculation-records.js';
 import { transformerProtection, evaluateTransformerProtection, migrateProtectionState,transformerBreakerOptions, transformerOcpdRatings, secondaryRuleConditions } from './dist/transformer-protection.js';
 // Static presentation, contrast and modeled routing checks; not real-browser visual QA.
 import assert from 'node:assert/strict';
@@ -24,18 +24,18 @@ assert.ok(css.includes('height:44px;min-width:0;font-size:16px'));
 assert.ok(css.includes('@media print'));
 const nodes=Object.fromEntries(['#copy-summary','#export-pdf','#save-calculation','#action-status','#storage-status','#main','#navigation','#calculator-form','#results','#sources','#reset','#print','#add-row'].map(key=>[key,{innerHTML:'',addEventListener(){},querySelector(){return null}}]));
 const handlers={},location={hash:''};let scrolls=0;
-const context=vm.createContext({closeRecordDialog(){},createSnapshot, buildSummary, summaryFromSnapshot, createRecordStore, transformerProtection, evaluateTransformerProtection, migrateProtectionState,transformerBreakerOptions, transformerOcpdRatings, secondaryRuleConditions, calc,systemOptions,voltageOptions,structuredClone,console,location,attachAmbientHelper(){},localStorage:{getItem:()=>null,setItem(){}},window:{addEventListener:(key,fn)=>handlers[key]=fn,scrollTo(){scrolls++}},document:{querySelector:key=>nodes[key],querySelectorAll:()=>[]}});
+const context=vm.createContext({closeRecordDialog(){},createSnapshot, buildSummary, summaryFromSnapshot, copySummaryFromSnapshot, createRecordStore, transformerProtection, evaluateTransformerProtection, migrateProtectionState,transformerBreakerOptions, transformerOcpdRatings, secondaryRuleConditions, calc,systemOptions,voltageOptions,structuredClone,console,location,attachAmbientHelper(){},localStorage:{getItem:()=>null,setItem(){}},window:{addEventListener:(key,fn)=>handlers[key]=fn,scrollTo(){scrolls++}},document:{querySelector:key=>nodes[key],querySelectorAll:()=>[]}});
 vm.runInContext(source+'\nglobalThis.ui={overview,calculator,modules,states,fieldHTML,guidanceHTML,inlineHint,route};',context);
 const {ui}=context;
 ui.overview();
-assert.equal((nodes['#main'].innerHTML.match(/class="module-card"/g)||[]).length,9);
+assert.equal((nodes['#main'].innerHTML.match(/class="tool-link"/g)||[]).length,10);
 assert.doesNotMatch(nodes['#main'].innerHTML,/class="intro"|tool-count|<h2>[^<]+<\/h2><p>/);
-assert.doesNotMatch(nodes['#main'].innerHTML,/<svg|module-icon/);
-assert.doesNotMatch(nodes['#navigation'].innerHTML,/<svg/);
+assert.doesNotMatch(nodes['#main'].innerHTML,/<svg(?! class="favorite-icon")|module-icon/);
+assert.doesNotMatch(nodes['#navigation'].innerHTML,/<svg(?! class="favorite-icon")/);
 for(const m of ui.modules){
  location.hash=`#${m.id}`;handlers.hashchange();
  assert.match(nodes['#navigation'].innerHTML,new RegExp(`href="#${m.id}" aria-current="page"`));
- assert.doesNotMatch(nodes['#main'].innerHTML,/AUTO-CALCULATES|form-bottom|class="intro"|panel-head|<h2>Inputs<\/h2>|<svg/);
+ assert.doesNotMatch(nodes['#main'].innerHTML,/AUTO-CALCULATES|form-bottom|class="intro"|panel-head|<h2>Inputs<\/h2>|<svg(?! class="favorite-icon")/);
  for(const f of m.fields.filter(f=>f.hint&&(!f.when||f.when(ui.states[m.id])))){
   const field=ui.fieldHTML(f,ui.states[m.id]);
   assert.ok(field.includes(`aria-describedby="hint-${f.key}"`));
@@ -50,9 +50,9 @@ assert.ok(nodes['#navigation'].innerHTML.includes('href="#overview" aria-current
 ui.calculator('service');
 assert.ok(nodes['#results'].innerHTML.includes('Neutral, grounding, bonding and conduit are not sized'));
 ui.states.conductor.terminal=90;ui.calculator('conductor');
-assert.match(nodes['#main'].innerHTML,/<small id="hint-terminal90Confirmed">/);
-assert.match(nodes['#results'].innerHTML,/role="alert"/);
+assert.match(nodes['#main'].innerHTML,/<small id="hint-terminal">/);
+assert.doesNotMatch(nodes['#results'].innerHTML,/role="alert"/);
 ui.states.amps.voltageMode='custom';ui.calculator('amps');
-assert.match(nodes['#main'].innerHTML,/<small id="hint-voltageConfirmed">/);
-assert.match(nodes['#results'].innerHTML,/role="alert"/);
+assert.match(nodes['#main'].innerHTML,/<small id="hint-voltage">/);
+assert.doesNotMatch(nodes['#results'].innerHTML,/role="alert"/);
 console.log('Modern presentation, AA text/control contrast, guidance accessibility and modeled history checks passed.');

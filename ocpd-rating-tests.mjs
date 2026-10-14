@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import * as calc from './dist/calc.js';
 import {systemOptions,voltageOptions} from './dist/voltage.js';
-import {createSnapshot,buildSummary,summaryFromSnapshot,createRecordStore} from './dist/calculation-records.js';
+import {createSnapshot,buildSummary,summaryFromSnapshot,copySummaryFromSnapshot,createRecordStore} from './dist/calculation-records.js';
 import {createPDF} from './dist/pdf-report.js';
 import {transformerProtection,evaluateTransformerProtection,migrateProtectionState,transformerBreakerOptions,transformerOcpdRatings,secondaryRuleConditions} from './dist/transformer-protection.js';
 const base={ocpd:20,terminal:75,ambient:30,parallelSets:1,configuration:'single-phase-2-wire',material:'copper'};
@@ -24,9 +24,9 @@ for(const load of ['',null,NaN,-1,0,4001])assert.ok(calc.conductor(calc.migrateC
 assert.deepEqual(calc.migrateConductorState(migrated),migrated,'Idempotent');
 assert.equal(calc.migrateConductorState({...old,load:10,continuous:16,ccc:4}).ocpd,30);
 const source=fs.readFileSync(new URL('./dist/app.js',import.meta.url),'utf8').replace(/^import[^\n]+\n/gm,'').replace(/route\(\);\s*$/,'');
-function ui(saved={}){const context=vm.createContext({calc,systemOptions,voltageOptions,createSnapshot,buildSummary,summaryFromSnapshot,createRecordStore,transformerProtection,evaluateTransformerProtection,migrateProtectionState,transformerBreakerOptions,transformerOcpdRatings,secondaryRuleConditions,structuredClone,console,localStorage:{getItem:()=>JSON.stringify(saved)},window:{addEventListener(){}}});vm.runInContext(source+';globalThis.ui={states,modules,defaults,fieldHTML};',context);return context.ui;}
-const u=ui({conductor:old}),m=u.modules.find(x=>x.id==='conductor');assert.equal(u.modules.length,9);assert.equal(u.defaults(m).ocpd,30);assert.equal(u.defaults(m).load,undefined);assert.equal(u.states.conductor.ocpd,25);assert.equal(u.states.conductor.load,undefined);
+function ui(saved={}){const context=vm.createContext({calc,systemOptions,voltageOptions,createSnapshot,buildSummary,summaryFromSnapshot,copySummaryFromSnapshot,createRecordStore,transformerProtection,evaluateTransformerProtection,migrateProtectionState,transformerBreakerOptions,transformerOcpdRatings,secondaryRuleConditions,structuredClone,console,localStorage:{getItem:()=>JSON.stringify(saved)},window:{addEventListener(){}}});vm.runInContext(source+';globalThis.ui={states,modules,defaults,fieldHTML};',context);return context.ui;}
+const u=ui({conductor:old}),m=u.modules.find(x=>x.id==='conductor');assert.equal(u.modules.length,10);assert.equal(u.defaults(m).ocpd,30);assert.equal(u.defaults(m).load,undefined);assert.equal(u.states.conductor.ocpd,25);assert.equal(u.states.conductor.load,undefined);
 const html=m.fields.map(f=>u.fieldHTML(f,u.states.conductor)).join('');assert.equal((html.match(/name="ocpd"/g)||[]).length,1);assert.match(html,/OCPD Rating/);assert.doesNotMatch(html,/name="load"|Auto-select/);assert.equal(m.fields.find(f=>f.key==='ocpd').options.length,calc.standardOcpdRatings.length);
 const service=u.modules.find(x=>x.id==='service');assert.ok(service.fields.some(f=>f.key==='load'));assert.equal(service.fields.find(f=>f.key==='ocpd').value,0);
 const state={...u.defaults(m),ocpd:20,configuration:'single-phase-2-wire'};const snapshot=createSnapshot(m,state,calc.conductor(state));assert.equal(snapshot.inputs.load,undefined);assert.ok(!snapshot.inputRows.some(x=>x.label==='Load'||x.label==='Design load'));const text=summaryFromSnapshot(snapshot);assert.match(text,/OCPD Rating: 20 A/);assert.doesNotMatch(text,/Design load:|No additional 125%|Enter the final design load/);assert.match(new TextDecoder().decode(createPDF(snapshot)),/OCPD Rating/);
-console.log('Explicit OCPD: strict ratings, #12 Cu at 20 A, no auto/load, current guard, migration, nine-module UI, summary and PDF checks passed.');
+console.log('Explicit OCPD: strict ratings, #12 Cu at 20 A, no auto/load, current guard, migration, ten-module UI, summary and PDF checks passed.');

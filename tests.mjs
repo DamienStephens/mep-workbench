@@ -13,7 +13,7 @@ const p={mode:'wattsToVA',watts:1000,va:1250,pf:.8};
 const a={mode:'wattsToAmps',value:1920,voltage:120,pf:.8,phase:'1'};
 const d={size:'12',length:100,current:20,voltage:120,pf:1,raceway:'steel',material:'copper',phase:'1'};
 const b={size:'12',conductors:4,grounds:4,yokes:1,studs:0,clamps:false,volume:20};
-test('eight calculation functions exported',()=>assert.deepEqual(Object.entries(calc).filter(([,v])=>typeof v==='function'&&![calc.migrateConductorState,calc.migrateDropState,calc.dropStatus].includes(v)).map(([k])=>k).sort(),['amps','box','conductor','conduit','drop','power','service','transformer']));
+test('nine calculation functions exported',()=>assert.deepEqual(Object.entries(calc).filter(([,v])=>typeof v==='function'&&![calc.allowanceCheckStatus,calc.migrateCableTrayState,calc.setTrayArrangement,calc.trayPhysicalCount,calc.conductorFillStatus,calc.minimumConductorRaceway,calc.migrateConductorState,calc.migrateDropState,calc.dropStatus].includes(v)).map(([k])=>k).sort(),['amps','box','conductor','conduit','drop','power','service','transformer','tray']));
 test('#1 copper 90C table = 145 A',()=>assert.equal(calc.conductors.find(w=>w.size==='1').cu90,145));
 for(const [load,size,breaker] of [[1,'14',10],[15,'14',15],[16,'12',20],[20,'12',20],[21,'10',25],[26,'10',30],[31,'8',35],[50,'8',50]]) test(`conductor ${load} A small-wire caps`,()=>{let r=calc.conductor({...c,load});equal(r,'Copper conductor per set',`${size} AWG`);equal(r,'Total OCPD',breaker);});
 test('single design load has no hidden multiplier',()=>{const r=calc.conductor({...c,load:30});assert.ok(!r.results.some(x=>x.label==='Design load'));equal(r,'Total OCPD',30);equal(r,'Copper conductor per set','10 AWG');});
@@ -23,7 +23,7 @@ test('ambient correction chooses #8',()=>equal(calc.conductor({...c,load:30,ambi
 test('combined correction 90C baseline',()=>near(calc.conductor({...c,load:40,ambient:40,configuration:'three-phase-4-wire'}),'Combined usable ampacity',40.04));
 test('explicit OCPD upsizes conductor',()=>equal(calc.conductor({...c,ocpd:50}),'Copper conductor per set','8 AWG'));
 test('EGC rating 100A',()=>equal(calc.conductor({...c,load:100}),'Base-minimum Cu EGC per raceway','8 AWG'));
-for(const delta of [{load:-1},{continuous:-1},{load:0},{load:NaN},{load:Infinity},{load:'garbage'},{terminal:90},{ccc:0},{ccc:101},{ccc:3.5},{ambient:-11},{ambient:81},{material:'steel'},{ocpd:17},{load:601},{load:600}]) test(`invalid conductor ${JSON.stringify(delta)}`,()=>invalid(calc.conductor({...c,...delta})));
+for(const delta of [{load:-1},{continuous:-1},{load:0},{load:NaN},{load:Infinity},{load:'garbage'},{terminal:100},{ccc:0},{ccc:101},{ccc:3.5},{ambient:-11},{ambient:81},{material:'steel'},{ocpd:17},{load:601},{load:600}]) test(`invalid conductor ${JSON.stringify(delta)}`,()=>invalid(calc.conductor({...c,...delta})));
 test('transformer 7.5kVA 480/240 single phase',()=>{const r=calc.transformer(t);equal(r,'Primary full-load current',15.625);equal(r,'Secondary full-load current',31.25);});
 test('transformer balanced three phase',()=>{const r=calc.transformer({...t,primaryPhase:3,secondaryPhase:3});near(r,'Primary full-load current',7500/(Math.sqrt(3)*480));near(r,'Secondary full-load current',7500/(Math.sqrt(3)*240));});
 test('transformer independently chosen phases',()=>{const r=calc.transformer({...t,primaryPhase:3});near(r,'Primary full-load current',7500/(Math.sqrt(3)*480));equal(r,'Secondary full-load current',31.25);});

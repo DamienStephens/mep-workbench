@@ -1,20 +1,18 @@
-import {formatCurrent, currentResult} from './current-display.js?v=2.6.0';
-import { conductors, circuitConfigurations } from './calc.js?v=2.6.0';
-import { checkVoltageInput, voltageSources } from './voltage.js?v=2.6.0';
+import { necReference } from './code-references.js?v=2.12.0';
+import {formatCurrent, currentResult} from './current-display.js?v=2.12.0';
+import { conductors, circuitConfigurations, allowanceCheckStatus } from './calc.js?v=2.12.0';
+import { checkVoltageInput, voltageSources } from './voltage.js?v=2.12.0';
 // Bounded NEC 2023-baseline design aid, not installation approval.
 export const transformerOcpdRatings = [15,20,25,30,35,40,45,50,60,70,80,90,100,110,125,150,175,200,225,250,300,350,400,450,500,600,700,800,1000,1200,1600,2000,2500,3000,4000];
 export const secondaryRuleConditions = {
- '10ft':'I verified a secondary run of 10 ft or less, enclosed in a continuous raceway from the transformer to a single terminating breaker or set of fuses; the conductors do not extend beyond the equipment they supply, and terminate in equipment containing that OCPD. All applicable NEC 240.21(C)(2) installation conditions are satisfied.',
- '25ft':'I verified a secondary run of 25 ft or less, protected from physical damage by an approved raceway or other approved means, terminating in a single breaker or set of fuses limiting the load to conductor ampacity. All applicable NEC 240.21(C)(6) installation conditions are satisfied.'
+ '10ft':'Design assumes a secondary run of 10 ft or less, enclosed in a continuous raceway from the transformer to a single terminating breaker or set of fuses; the conductors do not extend beyond the equipment they supply, and terminate in equipment containing that OCPD. All applicable NEC 240.21(C)(2) installation conditions require project-specific verification.',
+ '25ft':'Design assumes a secondary run of 25 ft or less, protected from physical damage by an approved raceway or other approved means, terminating in a single breaker or set of fuses limiting the load to conductor ampacity. All applicable NEC 240.21(C)(6) installation conditions require project-specific verification.'
 };
 export const transformerProtectionSources = [
- {label:'NFPA 70: verify adopted NEC 2023 text and local amendments',url:'https://www.nfpa.org/codes-and-standards/nfpa-70-standard-development/70'},
- {label:'Eaton transformer protection, section 7.19 (2017 manufacturer guide; verify final adopted 2023 text)',url:'https://www.eaton.com/content/dam/eaton/products/electrical-circuit-protection/fuses/technical-literature/bus-ele-br-3002-spd-2017.pdf'},
- {label:'NFPA code-development record: Table 450.3(B) and notes; not final licensed NEC 2023',url:'https://docinfofiles.nfpa.org/files/AboutTheCodes/70/70_A2025_NEC_P09_FD_PrelimFR.pdf'},
- {label:'NFPA code-development record: 240.21(C)(2) 10-ft secondary conductors; verify adopted text',url:'https://docinfofiles.nfpa.org/files/AboutTheCodes/70/70_A2025_NEC_P10_FD_PIResponses.pdf'},
- {label:'Eaton: transformer secondary conductor rules, pp. 27–28 (historical guide; verify adopted text)',url:'https://www.eaton.com/content/dam/eaton/products/electrical-circuit-protection/fuses/technical-literature/ne02-brochure.pdf'},
- {label:'HELUKABEL: NEC 2023 copper/aluminum ampacity and ambient tables',url:'https://www.helu.com/helu/us/publications/technical-documents/allowable-ampacity-tables.pdf'},
- {label:'Schneider Electric: 90°C lug marking alone does not qualify equipment for 90°C ampacity',url:'https://www.se.com/us/en/faqs/FA115128/'}
+ necReference('Table 450.3(B) and note 1: modeled transformer winding protection; grouped OCPD/thermal exceptions not modeled', 'transformer', true),
+ necReference('240.21(C)(2)/(6): modeled 10-ft and 25-ft secondary conductor rules and ratio floors', 'ocpd', true),
+ necReference('Table 310.16; Tables 310.15(B)(1)(1) and 310.15(C)(1); 310.15(E): modeled conductor ampacity', 'conductors', true),necReference('110.14(C): terminal temperature limits', 'terminations', true),necReference('310.10(G): modeled parallel installation requirements', 'conductors', true),
+ necReference('240.4(D) and 240.6(A): modeled conductor protection and standard ratings', 'ocpd', true),necReference('250.30: separately derived system checks outside calculation scope', 'grounding')
 ];
 const round=n=>Number(n.toFixed(3));
 // Display the exact factor rather than a rounded decimal approximation.
@@ -37,6 +35,7 @@ function ocpdLimit(current,side,mode){
  const standardMaximum=transformerOcpdRatings.filter(a=>le(a,maximum)).at(-1);
  return {multiplier,raw,maximum,standardMaximum,nextAllowed};
 }
+const ocpdCheckStatus=(rating,limit)=>limit?allowanceCheckStatus(rating,limit.maximum,'Within Table 450.3(B) ceiling','Exceeds Table 450.3(B) ceiling'):{statusText:'No Table 450.3(B) secondary ceiling'};
 export function transformerProtection(p){
  if(!p||!['kva','primary','secondary','designLoad','lengthFt','terminal','ambient','parallelSets'].every(k=>numeric(p[k])))return fail('Enter a finite number in every required field, including the preadjusted secondary design load.');
  const kva=Number(p.kva),vp=Number(p.primary),vs=Number(p.secondary),load=Number(p.designLoad),length=Number(p.lengthFt),terminal=Number(p.terminal),ambient=Number(p.ambient),sets=Number(p.parallelSets);
@@ -49,10 +48,8 @@ export function transformerProtection(p){
  if(!Object.hasOwn(secondaryRuleConditions,p.secondaryRule))return fail('Select a supported NEC 240.21(C) secondary conductor rule: 10 ft or 25 ft. Outside, industrial and primary-protected conductor arrangements require separate review.');
  const maxLength=p.secondaryRule==='10ft'?10:25;
  if(length<=0||length>maxLength)return fail(`The selected ${maxLength}-ft secondary conductor rule requires a measured conductor run greater than zero and no more than ${maxLength} ft.`);
- if(!yes(p.installationConfirmed))return fail(`Confirm the installation conditions for the selected rule. ${secondaryRuleConditions[p.secondaryRule]}`);
  if(load<=0)return fail('Enter a secondary design load greater than zero, already including applicable continuous-load allowances.');
- if(![60,75,90].includes(terminal))return fail('Select 60°C, 75°C or verified 90°C terminations.');
- if(terminal===90&&!yes(p.terminal90Confirmed))return fail('90°C ampacity requires verification that all connected equipment and terminations are listed and identified for 90°C ampacity under NEC 110.14(C); a wire or lug marking alone is insufficient.');
+ if(![60,75,90].includes(terminal))return fail('Select a 60°C, 75°C or 90°C termination-rating design basis.');
  if(ambient< -10||ambient>80)return fail('Supported effective ambient range is −10°C to 80°C.');
  if(!Number.isInteger(sets)||sets<1||sets>20)return fail('Use 1–20 identical parallel sets, one complete set per separate raceway.');
  if(!['copper','aluminum'].includes(p.material))return fail('Choose copper or aluminum THHN/THWN-2 conductors.');
@@ -82,9 +79,10 @@ export function transformerProtection(p){
  const wire=candidates.find(w=>le(required,sets*Math.min(w[`${prefix}${terminal}`],w[`${prefix}90`]*af*cf))&&(!caps[w.size]||le(bs,caps[w.size])));
  if(!wire)return fail(`No phase conductor through 750 kcmil ${metal} in ${sets} set(s) satisfies the ${formatCurrent(required)} A combined requirement. Increase identical parallel sets or obtain an engineered design.`);
  const base=wire[`${prefix}90`],term=wire[`${prefix}${terminal}`],adjusted=base*af*cf,usable=Math.min(term,adjusted),combined=sets*usable;
+ const ampacityStatus=allowanceCheckStatus(required,combined,'Meets required phase ampacity','Below required phase ampacity');
  const warnings=[
  ...voltageChecks.flatMap(c=>c.warnings),
- 'NEC 2023 baseline, subject to adopted edition, AHJ and manufacturer instructions. Transformer protection sources include historical manufacturer guides and code-development records; final licensed NEC 2023 protection text was not independently accessed. This is a bounded design aid, not approval or a complete installation design.',
+ `Secondary conductor installation is an unverified design assumption. ${secondaryRuleConditions[p.secondaryRule]}`,
  'NEC 450.3(B) protects the transformer; NEC 240.21(C) independently governs secondary conductors. Primary-only transformer protection does not establish secondary conductor protection. This model requires a single downstream secondary breaker or set of fuses in BOTH protection modes.',
  'Only ordinary dry-type transformers at or below 1000 V, a single secondary conductor run and a single terminating secondary OCPD are modeled. No autotransformers, buck-boost, multiple windings/secondary circuits, supervised industrial exceptions, motor-only loads or phase conversion.',
  'The design load is preadjusted for applicable continuous-load allowances and other sizing rules. Nameplate current is not itself a complete calculated load. Verify actual connected load and transformer thermal/loading suitability separately.',
@@ -96,31 +94,32 @@ export function transformerProtection(p){
  'Use line-to-line voltage for three-phase and full-winding voltage for single-phase (240 V for a 120/240 V secondary). Effective ambient must already include any applicable rooftop adder; none is added here.'
  ];
  if(sets>1)warnings.push('Parallel phase conductors are 1/0 AWG or larger, with one complete identical set per separate raceway. Verify equal lengths, material, size, insulation and termination method, grouping, equal electrical characteristics and equipment listed for parallel terminations under 310.10(G).');
- if(terminal===90)warnings.push('90°C results rely on your explicit confirmation that ALL connected equipment and terminations are listed and identified for 90°C ampacity; the lowest equipment rating governs.');
+ if(terminal===90)warnings.push('90°C results assume ALL connected equipment and terminations are listed and identified for 90°C ampacity under NEC 110.14(C). This equipment condition is unverified; a 90°C wire or lug marking alone is insufficient, and the lowest equipment rating governs.');
  if(p.material==='aluminum')warnings.push('Aluminum is table-based, not a stocked-product recommendation. Verify AA-8000 THHN/THWN-2 availability, AL-rated terminals and manufacturer preparation/torque requirements.');
+ if(ampacityStatus.status==='red')warnings.push('The unrounded usable phase ampacity is below the required minimum. Display rounding and selection tolerance do not establish compliance; increase the conductor capacity.');
  const steps=[
  `Nameplate primary I = ${kva} × 1000 / (${phaseFactorLabel(p.phase)} × ${vp}) = ${formatCurrent(ip)} A; secondary I = ${kva} × 1000 / (${phaseFactorLabel(p.phase)} × ${vs}) = ${formatCurrent(is)} A.`,
  `Table 450.3(B), ${p.protection==='dual'?'primary-and-secondary':'primary-only'} transformer protection: primary ceiling ${round(pl.multiplier*100)}% × ${formatCurrent(ip)} = ${formatCurrent(pl.raw)} A. ${pl.nextAllowed?'Only the 125% cell permits the next standard rating.':'This percentage has no next-standard exception.'} Selected primary OCPD = ${bp} A.`,
  sl?`Secondary transformer protection ceiling = ${round(sl.multiplier*100)}% × ${formatCurrent(is)} = ${formatCurrent(sl.raw)} A. ${sl.nextAllowed?'The 125% cell permits the next standard rating.':'No next-standard exception.'} Selected secondary OCPD = ${bs} A.`:`Primary-only transformer protection uses no Table 450.3(B) secondary percentage ceiling. The ${bs} A downstream OCPD is still required here for the selected secondary conductor arrangement.`,
  `Automatic selection, when requested: smallest modeled standard primary OCPD at least nameplate current and smallest secondary OCPD at least design load; both are checked against applicable transformer ceilings. This is not an inrush/coordination selection.`,
- `NEC 240.21(C)(${p.secondaryRule==='10ft'?'2':'6'}): measured secondary conductor length ${length} ft ≤ ${maxLength} ft. Installation conditions explicitly confirmed.`,
+ `NEC 240.21(C)(${p.secondaryRule==='10ft'?'2':'6'}): entered secondary conductor length ${length} ft ≤ ${maxLength} ft. Installation conditions are assumed for design; actual installation is not verified.`,
  `Secondary conductor ratio floor = primary OCPD × primary/secondary voltage ${p.secondaryRule==='10ft'?'× 1/10':'× 1/3'} = ${bp} × ${vp}/${vs} / ${p.secondaryRule==='10ft'?10:3} = ${formatCurrent(ratioFloor)} A. The 10-ft floor is conservatively applied even for conductors remaining inside the supply enclosure.`,
  `Required combined usable phase ampacity = max(design load ${formatCurrent(load)}, terminating OCPD ${bs}, ratio floor ${formatCurrent(ratioFloor)}) = ${formatCurrent(required)} A.`,
  `${wireLabel(wire.size)} ${metal} per phase per set: ${terminal}°C terminal ampacity ${formatCurrent(term)} A; corrected/adjusted 90°C ampacity = ${formatCurrent(base)} × ${af} ambient × ${cf} CCC = ${formatCurrent(adjusted)} A.`,
- `${sets} set(s) × min(${formatCurrent(term)}, ${formatCurrent(adjusted)}) = ${formatCurrent(combined)} A combined usable phase ampacity ≥ ${formatCurrent(required)} A. No conductor next-size-up exception.`
+ `${sets} set(s) × min(${formatCurrent(term)}, ${formatCurrent(adjusted)}) = ${formatCurrent(combined)} A combined usable phase ampacity ${combined>=required?'≥':'<'} ${formatCurrent(required)} A. No conductor next-size-up exception.`
  ];
  return {results:[
- {label:'Secondary phase conductor per set',value:`${wireLabel(wire.size)} ${metal}`},
+ {label:'Secondary phase conductor per set',value:`${wireLabel(wire.size)} ${metal}`,...ampacityStatus},
  currentResult('Primary full-load current',ip),
  currentResult('Secondary full-load current',is),
- {label:'Selected primary OCPD',value:bp,unit:'A'},
- {label:'Selected secondary OCPD',value:bs,unit:'A'},
+ {label:'Selected primary OCPD',value:bp,unit:'A',...ocpdCheckStatus(bp,pl)},
+ {label:'Selected secondary OCPD',value:bs,unit:'A',...ocpdCheckStatus(bs,sl)},
  {label:'Maximum modeled primary OCPD',value:pl.standardMaximum??'None',...(pl.standardMaximum?{unit:'A'}:{})},
  {label:'Maximum modeled secondary transformer OCPD',value:sl?(sl.standardMaximum??'None'):'Not limited by primary-only table row',...(sl?.standardMaximum?{unit:'A'}:{})},
  {label:'Secondary conductor rule',value:`NEC 240.21(C)(${p.secondaryRule==='10ft'?'2':'6'}) · ${maxLength} ft`},
  currentResult('Required combined phase ampacity',required),
- currentResult('Combined usable phase ampacity',combined),
- currentResult('Usable phase ampacity per set',usable),
+ {...currentResult('Combined usable phase ampacity',combined),...ampacityStatus},
+ {...currentResult('Usable phase ampacity per set',usable),...allowanceCheckStatus(required,combined,'Meets per-set share of required ampacity','Below per-set share of required ampacity')},
  {label:'Separate conductor sets',value:sets},
  {label:'CCC per raceway',value:circuit.ccc},
  {label:'Neutral / grounding / bonding / conduit',value:'Separate design required'}
@@ -152,7 +151,7 @@ export function transformerProtectionLimits(p){
  ...[[pl,'Primary'],[sl,'Secondary']].filter(([l])=>l).map(([l,side])=>`${side} Table 450.3(B) ceiling: ${round(l.multiplier*100)}% = ${formatCurrent(l.raw)} A. ${l.nextAllowed?'Only the 125% cell permits the next standard size.':'No next-standard exception.'} Modeled standard-device range is 15–4000 A; a reported modeled maximum is not the full table ceiling when that ceiling exceeds the device range.`)];
  const warnings=[...checks.flatMap(c=>c.warnings),'Maximum modeled permitted OCPDs are table limits, not recommended or selected breakers. No actual load, conductor size or installation suitability is inferred from nameplate current.',
  ...(p.protection==='primary-only'?['Primary-only winding protection establishes no Table 450.3(B) secondary ceiling. This does not mean that no secondary OCPD is needed; secondary conductors require independent protection review.']:[]),
- 'NEC 2023 baseline, subject to adopted edition, AHJ and manufacturer instructions. Final licensed NEC 2023 protection text was not independently accessed. Ordinary dry-type transformers only; verify inrush, coordination, fault current, equipment ratings, grounding and bonding separately.'];
+ 'NEC 2023 baseline, subject to adopted edition, AHJ and manufacturer instructions. Ordinary dry-type transformers only; verify inrush, coordination, fault current, equipment ratings, grounding and bonding separately.'];
  return {results,steps,warnings,sources:[...transformerProtectionSources,...voltageSources]};
 }
 // The two table ceilings are independent. Choosing either side first changes the
@@ -201,7 +200,7 @@ export function evaluateTransformerProtection(p){
   full.results.push({label:'Protection method',value:p.protection==='dual'?'Primary and secondary protection':'Primary-only winding protection'},{label:'Enabled checks',value:'Selected OCPDs and secondary conductors'});return full;
  }
  basic.results.push({label:'Defined OCPD side',value:pair.breakerSide==='primary'?'Define primary OCPD':'Define secondary OCPD'});
- for(const side of ['primary','secondary'])if(pair.selected[side])basic.results.push({label:`Selected ${side} OCPD`,value:pair.selected[side],unit:'A'});
+ for(const side of ['primary','secondary'])if(pair.selected[side])basic.results.push({label:`Selected ${side} OCPD`,value:pair.selected[side],unit:'A',...ocpdCheckStatus(pair.selected[side],pair[`${side}Limit`])});
  const otherSide=pair.breakerSide==='primary'?'secondary':'primary';
  const options=pair[`${otherSide}Options`];
  const range=options.length?`${options[0]}–${options.at(-1)} A, modeled standard ratings only`:'No acceptable partner in the modeled 15–4000 A device range';
@@ -213,7 +212,9 @@ export function evaluateTransformerProtection(p){
   basic.steps.push('Partner ranges include only modeled standard devices from 15–4000 A that satisfy the selected Table 450.3(B) protection mode. Ratings below nameplate full-load current may limit usable capacity; actual load, continuous-load allowances, inrush and secondary conductor protection have not been checked.');
  }
 
- basic.results.push({label:'Breaker pair status',value:status});
+ const pairExceeded=(pair.selected.primary>0&&pair.selected.primary>pair.primaryLimit.maximum)||(pair.secondaryLimit&&pair.selected.secondary>0&&pair.selected.secondary>pair.secondaryLimit.maximum);
+ const pairStatus=pairExceeded?{status:'red',statusText:'Exceeds a Table 450.3(B) ceiling'}:pair.complete&&pair.secondaryLimit?{status:'green',statusText:'Within both Table 450.3(B) ceilings'}:{statusText:pair.complete?'No Table 450.3(B) secondary ceiling':'Breaker pair check not established'};
+ basic.results.push({label:'Breaker pair status',value:pairExceeded?'Exceeds transformer-protection limits (Table 450.3(B) only)':status,...pairStatus});
  const partialSides=['primary','secondary'].filter(side=>pair.partialCapacity[side]);
  if(partialSides.length){
   basic.results.push({label:'Capacity note',value:'Partial-capacity selection: selected OCPD below nameplate FLC'});
@@ -228,7 +229,7 @@ export function migrateProtectionState(input,{preserveFull=true}={}){
  const p=structuredClone(input||{});
  if(p.ocpdCheckEnabled===undefined&&p.conductorCheckEnabled===undefined&&Object.hasOwn(p,'designLoad')){
   p.ocpdCheckEnabled=preserveFull;p.conductorCheckEnabled=preserveFull;
-  p.migrationNotice=preserveFull?'Previous full transformer calculation preserved. Selected OCPD and secondary conductor checks remain enabled; verify the saved inputs and installation confirmations.':'Now showing basic winding-protection limits. Your previous advanced inputs are retained in the optional checks, which are off.';
+  p.migrationNotice=preserveFull?'Previous full transformer calculation preserved. Selected OCPD and secondary conductor checks remain enabled; verify the saved inputs and installation design assumptions.':'Now showing basic winding-protection limits. Your previous advanced inputs are retained in the optional checks, which are off.';
  }
  if(p.breakerSide===undefined){
   p.breakerSide='primary';

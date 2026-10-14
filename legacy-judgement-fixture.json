@@ -1,0 +1,144 @@
+{
+  "moduleId": "protection",
+  "moduleTitle": "Transformer protection",
+  "inputs": {
+    "kva": 75,
+    "phase": 3,
+    "primary": 480,
+    "secondary": 208,
+    "protection": "dual"
+  },
+  "inputRows": [
+    {
+      "label": "kva",
+      "value": "75"
+    },
+    {
+      "label": "phase",
+      "value": "3"
+    },
+    {
+      "label": "primary",
+      "value": "480"
+    },
+    {
+      "label": "secondary",
+      "value": "208"
+    },
+    {
+      "label": "protection",
+      "value": "dual"
+    }
+  ],
+  "result": {
+    "results": [
+      {
+        "label": "Primary full-load current",
+        "value": 90.211,
+        "displayValue": "90.2",
+        "unit": "A"
+      },
+      {
+        "label": "Secondary full-load current",
+        "value": 208.179,
+        "displayValue": "208.2",
+        "unit": "A"
+      },
+      {
+        "label": "Maximum modeled permitted primary OCPD",
+        "value": 225,
+        "unit": "A"
+      },
+      {
+        "label": "Maximum modeled permitted secondary OCPD",
+        "value": 300,
+        "unit": "A"
+      },
+      {
+        "label": "Protection method",
+        "value": "Primary and secondary protection"
+      },
+      {
+        "label": "Enabled checks",
+        "value": "Transformer winding limits only"
+      }
+    ],
+    "steps": [
+      "Nameplate current = kVA × 1000 / (√3 × winding voltage). Primary 90.2 A; secondary 208.2 A.",
+      "Primary Table 450.3(B) ceiling: 250% = 225.5 A. No next-standard exception. Modeled standard-device range is 15–4000 A; a reported modeled maximum is not the full table ceiling when that ceiling exceeds the device range.",
+      "Secondary Table 450.3(B) ceiling: 125% = 260.2 A. Only the 125% cell permits the next standard size. Modeled standard-device range is 15–4000 A; a reported modeled maximum is not the full table ceiling when that ceiling exceeds the device range."
+    ],
+    "warnings": [
+      "Maximum modeled permitted OCPDs are table limits, not recommended or selected breakers. No actual load, conductor size or installation suitability is inferred from nameplate current.",
+      "NEC 2023 baseline, subject to adopted edition, AHJ and manufacturer instructions. Final licensed NEC 2023 protection text was not independently accessed. Ordinary dry-type transformers only; verify inrush, coordination, fault current, equipment ratings, grounding and bonding separately."
+    ],
+    "sources": [
+      {
+        "label": "NEC 2023 Table 450.3(B) and note 1: modeled transformer winding protection; grouped OCPD/thermal exceptions not modeled — modeled provisions checked against published text",
+        "url": "https://link.nfpa.org/publications/70/2023/chapters/4/articles/450",
+        "category": "NEC",
+        "verificationStatus": "verified-modeled-provisions",
+        "verificationDate": "2026-10-13"
+      },
+      {
+        "label": "NEC 2023 240.21(C)(2)/(6): modeled 10-ft and 25-ft secondary conductor rules and ratio floors — modeled provisions checked against published text",
+        "url": "https://link.nfpa.org/publications/70/2023/chapters/2/articles/240",
+        "category": "NEC",
+        "verificationStatus": "verified-modeled-provisions",
+        "verificationDate": "2026-10-13"
+      },
+      {
+        "label": "NEC 2023 Table 310.16; Tables 310.15(B)(1)(1) and 310.15(C)(1); 310.15(E): modeled conductor ampacity — modeled provisions checked against published text",
+        "url": "https://link.nfpa.org/publications/70/2023/chapters/3/articles/310",
+        "category": "NEC",
+        "verificationStatus": "verified-modeled-provisions",
+        "verificationDate": "2026-10-13"
+      },
+      {
+        "label": "NEC 2023 110.14(C): terminal temperature limits — modeled provisions checked against published text",
+        "url": "https://link.nfpa.org/publications/70/2023/chapters/1/articles/110",
+        "category": "NEC",
+        "verificationStatus": "verified-modeled-provisions",
+        "verificationDate": "2026-10-13"
+      },
+      {
+        "label": "NEC 2023 310.10(G): modeled parallel installation requirements — modeled provisions checked against published text",
+        "url": "https://link.nfpa.org/publications/70/2023/chapters/3/articles/310",
+        "category": "NEC",
+        "verificationStatus": "verified-modeled-provisions",
+        "verificationDate": "2026-10-13"
+      },
+      {
+        "label": "NEC 2023 240.4(D) and 240.6(A): modeled conductor protection and standard ratings — modeled provisions checked against published text",
+        "url": "https://link.nfpa.org/publications/70/2023/chapters/2/articles/240",
+        "category": "NEC",
+        "verificationStatus": "verified-modeled-provisions",
+        "verificationDate": "2026-10-13"
+      },
+      {
+        "label": "NEC 2023 250.30: separately derived system checks outside calculation scope — separate project review required; not validated by this calculation",
+        "url": "https://link.nfpa.org/publications/70/2023/chapters/2/articles/250",
+        "category": "NEC",
+        "verificationStatus": "separate-review-required"
+      },
+      {
+        "label": "Electrical-system background, not code authority — Schneider Electric: North American wye, delta and split-phase voltage systems",
+        "url": "https://www.se.com/us/en/faqs/FAQ000234976/"
+      },
+      {
+        "label": "Electrical-system background, not code authority — Schneider Electrical Installation Guide: IEC nominal voltage ranges",
+        "url": "https://www.electrical-installation.org/enwiki/Definition_of_voltage_ranges"
+      },
+      {
+        "label": "Electrical-system background, not code authority — Schneider Electric: 240/120 V high-leg delta precautions",
+        "url": "https://www.se.com/us/en/faqs/FA123686/"
+      }
+    ]
+  },
+  "limitations": [],
+  "appVersion": "2.10.1",
+  "codeEdition": "NEC 2023 reference baseline; verify adopted edition and local amendments",
+  "generatedAt": "2026-10-13T15:00:00.000Z",
+  "projectName": "Historical report regression",
+  "calculationName": "Original v2.10.1 transformer"
+}

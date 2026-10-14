@@ -1,4 +1,4 @@
-import { createSnapshot, buildSummary, summaryFromSnapshot, createRecordStore } from './dist/calculation-records.js';
+import { createSnapshot, buildSummary, summaryFromSnapshot, copySummaryFromSnapshot, createRecordStore } from './dist/calculation-records.js';
 import { transformerProtection, evaluateTransformerProtection, migrateProtectionState,transformerBreakerOptions, transformerOcpdRatings, secondaryRuleConditions } from './dist/transformer-protection.js';
 // Node-only regression tests for rendered HTML constraints and result rendering.
 // This models number-input validity; it does not replace real-browser visual QA.
@@ -38,7 +38,7 @@ function inputFromHTML(tag) {
 function harness(saved = {}) {
   const nodes = { '#results': { innerHTML: '' }, '#sources': { innerHTML: '' } };
   let inputs = [];
-  const context = vm.createContext({createSnapshot, buildSummary, summaryFromSnapshot, createRecordStore, transformerProtection, evaluateTransformerProtection, migrateProtectionState,transformerBreakerOptions, transformerOcpdRatings, secondaryRuleConditions,
+  const context = vm.createContext({createSnapshot, buildSummary, summaryFromSnapshot, copySummaryFromSnapshot, createRecordStore, transformerProtection, evaluateTransformerProtection, migrateProtectionState,transformerBreakerOptions, transformerOcpdRatings, secondaryRuleConditions,
     calc, systemOptions, voltageOptions, structuredClone, console,
     localStorage: { getItem: () => JSON.stringify(saved), setItem() {} },
     window: { addEventListener() {} },
@@ -130,9 +130,13 @@ test('Saved inputs survive and calculate in both converters', () => {
 });
 test('Compact results keep conductor size, OCPD and EMT above details', () => {
   const {output}=harness().render('conductor');
-  const [visible,details]=output.split('<details');
-  for(const label of ['Copper conductor per set','Total OCPD','Minimum EMT per set','Separate EMT raceways'])assert.ok(visible.includes(label),label);
-  assert.ok(details.includes('Actual fill per raceway'));
+  const [visible,additional,details]=output.split('<details');
+  for(const label of ['Copper conductor per set','Total OCPD','Minimum raceway per set','Separate raceways'])assert.ok(visible.includes(label),label);
+  assert.ok(additional.includes('Additional results'));
+  assert.ok(additional.includes('Actual fill per raceway'));
+  assert.ok(!additional.includes('Method'));
+  assert.ok(details.includes('Calculation details'));
+  assert.ok(!details.includes('metric-grid'));
   assert.ok(details.includes('Method'));
   assert.ok(!/<details[^>]*\sopen(?:[\s>])/.test(output));
 });
@@ -143,7 +147,7 @@ test('Safety conditions stay outside collapsed details', () => {
     assert.ok(visible.includes('90°C equipment rating condition'));
     assert.ok(visible.includes('1/0 AWG'));
   }
-  assert.ok(harness().render('conductor',{terminal:90}).output.includes('role="alert"'));
+  assert.ok(harness().render('conductor',{terminal:90}).output.split('<details')[0].includes('design assumption'));
   assert.ok(harness().render('amps',{voltageMode:'custom',voltage:245,voltageConfirmed:true}).output.split('<details')[0].includes('custom 245 V'));
 });
 test('Failed target and fill checks remain prominent', () => {

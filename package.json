@@ -1,9 +1,9 @@
 {
   "name": "mep-workbench",
-  "version": "2.6.0",
+  "version": "2.12.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests.mjs && node conductor-fill-tests.mjs && node parallel-tests.mjs && node ui-tests.mjs && node voltage-tests.mjs && node theme-tests.mjs && node termination-tests.mjs && node service-tests.mjs && node ambient-tests.mjs && node compact-tests.mjs && node modern-tests.mjs && node monochrome-tests.mjs && node extended-conductor-tests.mjs && node integrated-sizing-tests.mjs && node transformer-protection-tests.mjs && node calculation-records-tests.mjs && node pdf-report-tests.mjs && node worked-examples-tests.mjs && node workflow-ui-tests.mjs && node ocpd-rating-tests.mjs && node protection-simple-tests.mjs && node breaker-pair-tests.mjs && node breaker-pair-ui-tests.mjs && node current-display-tests.mjs && node record-dialog-tests.mjs && node root-three-tests.mjs && node voltage-drop-pf-tests.mjs"
+    "test": "node tests.mjs && node conductor-fill-tests.mjs && node parallel-tests.mjs && node ui-tests.mjs && node voltage-tests.mjs && node theme-tests.mjs && node termination-tests.mjs && node service-tests.mjs && node ambient-tests.mjs && node compact-tests.mjs && node modern-tests.mjs && node monochrome-tests.mjs && node extended-conductor-tests.mjs && node integrated-sizing-tests.mjs && node transformer-protection-tests.mjs && node calculation-records-tests.mjs && node pdf-report-tests.mjs && node worked-examples-tests.mjs && node workflow-ui-tests.mjs && node ocpd-rating-tests.mjs && node protection-simple-tests.mjs && node breaker-pair-tests.mjs && node breaker-pair-ui-tests.mjs && node current-display-tests.mjs && node record-dialog-tests.mjs && node root-three-tests.mjs && node voltage-drop-pf-tests.mjs && node cable-tray-tests.mjs && node tray-ui-tests.mjs && node dashboard-tests.mjs && node dashboard-ui-tests.mjs && node provenance-tests.mjs && node published-nec-tests.mjs && node raceway-grounding-tests.mjs && node conductor-presentation-tests.mjs && node engineering-judgement-tests.mjs && node check-status-tests.mjs && node tray-design-assumptions-tests.mjs && node tray-record-migration-tests.mjs && node assumption-engine-tests.mjs && node manual-voltage-engine-tests.mjs && node voltage-selector-ui-tests.mjs"
   }
 }

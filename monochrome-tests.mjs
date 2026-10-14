@@ -21,8 +21,8 @@ for (const [i, block] of palettes.entries()) {
   gray(tokens[name], `${i}: ${name}`);
  }
 }
-// Permit warning/error tokens and the explicitly scoped voltage-drop status rules.
-const nonSemantic = css.replace(/[^{}]*\.result-hero\.drop-(?:green|orange|red)[^{}]*\{[^{}]*\}/g,'').replace(/--(?:warning|error)-(?:bg|ink|line):\s*#[\da-f]{6};/gi, '');
+// Permit warning/error tokens and the explicitly scoped voltage-drop/conductor status rules.
+const nonSemantic = css.replace(/[^{}]*\.check-(?:green|red)[^{}]*\{[^{}]*\}/g,'').replace(/[^{}]*\.metric-(?:green|orange|red)[^{}]*\{[^{}]*\}/g,'').replace(/[^{}]*\.result-hero\.drop-(?:green|orange|red)[^{}]*\{[^{}]*\}/g,'').replace(/--(?:warning|error)-(?:bg|ink|line):\s*#[\da-f]{6};/gi, '');
 for (const hex of nonSemantic.match(/#[\da-f]{6}\b|#[\da-f]{3}\b/gi) || []) gray(hex, 'Non-semantic CSS');
 for (const hex of (html + theme).match(/#[\da-f]{6}\b|#[\da-f]{3}\b/gi) || []) gray(hex, 'Browser chrome');
 assert.doesNotMatch(nonSemantic, /\b(?:rgba?|hsla?|oklch|color-mix)\(/i);
@@ -43,6 +43,6 @@ assert.match(css, /\.sidebar\{[^}]*border-right:1px solid var\(--line\)/);
 const mobile = css.slice(css.indexOf('@media(max-width:760px){'), css.indexOf('@media(max-width:520px){'));
 assert.match(mobile, /\.sidebar\{[^}]*border-right:0;border-bottom:1px solid var\(--line\)/);
 assert.match(css, /\*\{box-sizing:border-box\}/);
-assert.match(css, /\.sidebar\{[^}]*width:184px/);
-assert.match(css, /\.main-wrap\{margin-left:184px;width:calc\(100% - 184px\)/);
+assert.match(css, /\.sidebar\{[^}]*width:276px/);
+assert.match(css, /\.main-wrap\{margin-left:276px;width:calc\(100% - 276px\)/);
 console.log('Both grayscale themes, semantic color isolation, flat UI and neutral interaction contracts passed.');

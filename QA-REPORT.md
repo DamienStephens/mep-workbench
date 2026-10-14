@@ -1,5 +1,59 @@
 # MEP Workbench: independent calculation QA
 
+## 2026-10-13 v2.12.0 voltage simplification and confirmation-free design inputs
+
+- Full `npm test`: all 42 suites passed. All distribution JavaScript files passed `node --check`; `git diff --check` passed. Application, new snapshot and every asset cache version identify 2.12.0.
+- New 672-check engine suite covers custom voltages from fractional values through MV/HV, both phases and load-conversion directions, transformer currents, old true/false/missing confirmation flags, invalid and nonfinite inputs, representable overflow fallbacks and numeric-range failure. Ordinary 120 V three-phase remains excluded from standard presets; custom values retain explicit scope information.
+- Manual voltage-drop coverage exercises independent R/X, phase, PF, equal parallel sets, voltage scale, missing/negative/nonfinite/all-zero R/X, stale hidden Table 9 fields, excessive drop, no-source notes and project provenance. Manual results do not carry Table 9 source verification. Existing 936 Table 9 formula cases and 1,584 parallel-current cases remain passing. Built-in 600 V, integrated 1,000 V, transformer protection 1,000 V and tray 2,000 V scopes remain enforced.
+- New modeled UI suite covers all eight voltage inputs across six calculators, hidden integrated controls, Custom-last dropdowns, correct line-to-line/full-winding/load labels, no duplicate mode/system/confirmation fields, repeated preset/custom/phase changes, retained custom numbers, HTML numeric constraints, MV custom entry, required R/X and optional blank source, mode changes, reset, JSON reload, saved loading, dashboard resume, readable single-field summaries and immutable saved PDFs.
+- Engineering confirmations were replaced by honest design assumptions. Existing old true flags never become new installation/listing claims; single-conductor tray eligibility remains conditional. Numerical pass/fail status, rung limits, secondary length/OCPD/configuration checks, terminal ampacity restrictions and ambient rooftop method selection remain. Destructive saved-record confirmation remains intact.
+- Existing historical report/PDF digest regressions still pass. Current-state migration does not rebuild or rewrite frozen historical input rows, methods, sources, disclaimers or result precision.
+- No live-browser visual/keyboard/clipboard/print/download QA, preview server, alternate browser, Site publication or GitHub push was performed. Modeled DOM/static verification is not browser verification or electrical installation certification.
+
+## 2026-10-13 v2.11.0 tray inputs and universal check status
+
+- Full aggregate `npm test`: all 39 suites passed. Every `dist/*.js` passed `node --check`; `git diff --check` passed. Application, new snapshot and all import/entry cache versions are 2.11.0.
+- Tray numerical coverage: 329 existing/formula/provenance checks plus 257 repeated group/count and boundary checks. v2 input counts multiply triangle/square groups by three/four before all NEC calculations. Legacy migration and every repeated layout switch preserve physical totals, including invalid fractional groups, which remain blocked without rounding. Overflow/unknown quantity schema and unsupported provenance are rejected.
+- All 12 Table 5 source areas, including 700 kcmil, produce full-precision `sqrt(4A/pi)` estimates. Source mismatch, multicable misuse and >600 V reference misuse fail. NEC-derived estimates stay conditional; existing Cu/Al Southwire specifications and manual overrides remain. No fresh published diameter-column verification is claimed.
+- Rung coverage: omitted values resolve to an explicitly assumed 9 in.; unconfirmed values remain conditional; user-confirmed positive values through 9 in. pass that bounded condition; values over 9 in. or malformed values fail. All-250–750-kcmil runs do not inherit this small-conductor rung limit. Legacy overrides are preserved and rechecked.
+- New 208-case semantic engine suite checks exact, just-below and just-above raw limits, published raceway allowances, EMT schedules, box volume, conductor/service/transformer ampacity, neutral unknown/unbounded checks, unchanged VD guidance and snapshots. Modeled UI tests assert green/red metrics and hero values across real modules, keep nameplate currents neutral, and retain light/dark AA contrast/text equivalents.
+- Modeled tray UI checks cover default source, 700 kcmil, both Southwire references, manual override, live physical totals, repeated group changes, incomplete-group errors, JSON startup/reload, saved-record loads, collapsed routine notices, bottom conditional scope and rung override/confirmation. Invalid cases disable export actions; current copies remain title/inputs/outputs only.
+- Frozen historical tray summary, clipboard and PDF digests remain identical. Existing historical v2.4.0/v2.9.0/v2.10.1 report tests also pass; loading recalculates a new state and never rewrites original saved snapshot content.
+- Real-browser visual, keyboard, clipboard, print and download QA was not run. No preview server, alternate browser route, installation, GitHub push or Site publication was performed by this implementation task. Automated DOM/static checks are not browser verification or installation certification.
+
+## 2026-10-13 v2.10.2 engineering judgement note
+
+- The exact requested sentence is appended once to the shared NEC 2023 footer on the dashboard, all ten calculators and Saved calculations. It is not duplicated inside individual result panels.
+- New full summaries and PDFs include the sentence once. Clipboard summaries remain exactly the module title, inputs and outputs. Version-gated report formatting leaves older reports unchanged without mutating snapshots.
+- Removed the live basic/OCPD-only transformer warning sentence claiming final NEC 2023 protection text was not accessed, which contradicted the completed modeled-provision audit. All adjacent project-specific constraints remain, and the numerical/result data matches the pre-edit transformer fixture.
+- `npm test`: all 36 suites pass. Added `engineering-judgement-tests.mjs` verifies 12 page footers, ten current summaries/PDFs and clipboard actions, repeated rendering, save/export, both transformer protection methods with basic/OCPD-only checks, version boundaries, asset cache versions, semantic PDF extraction, and byte-identical pre-edit v2.10.1 summary/PDF hashes. Existing v2.9.0 and v2.4.0 historical PDF regressions also pass.
+- Every distribution JavaScript file passes `node --check`; `git diff --check` passes. Real-browser visual, keyboard, clipboard, print and download QA remain unverified. No preview server, alternate browser route, GitHub push or Site publication was performed by this implementation task.
+- Application/new-report and asset cache versions are 2.10.2.
+
+## 2026-10-13 v2.10.1 conductor presentation
+
+- Final conductor input is optional raceway selection with an explicit EMT default; all five choices, saved inputs, navigation and reset remain intact.
+- Additional results and Calculation details are separate, initially closed native disclosures. Both participate independently in print expansion/restoration; conditional warnings/errors remain outside.
+- Integrated drop metadata uses raw, unrounded values with the existing green ≤3%, orange >3%/<5%, red ≥5% convention. The entered design target remains independent and an impossible target blocks results/export.
+- Fill uses the published Table 4 area allowance, with no invented orange band. The valid IMC/Al/80 A case displaying 40.042% remains green; no supported raceway is red and visibly warned.
+- A direct comparison with the v2.10.0 checkout tested 4,480 conductor combinations. After removing additive status metadata, complete results, methods, warnings, sources and grounding flags were identical. The same comparison checked 896 service outputs without removing any metadata; all were identical.
+- A modeled-render comparison against v2.10.0 confirmed byte-identical default input, result and source HTML for all nine non-conductor calculators.
+- Final `npm test`: all 35 suites pass. New `conductor-presentation-tests.mjs` covers four exact/raw voltage-drop edges (including values rounding to the same displayed 3%/5%), 150 published fill-boundary checks, the 40.042% IMC case, unsupported fill, conservative EGC/result preservation, final optional raceway placement, AA palette contrast, independent disclosures and all four print-open combinations, other-module isolation, copy/save/load/reset, immutable PDF snapshots, and impossible-target action blocking.
+- All distribution JavaScript files pass `node --check`; `git diff --check` passes. No live-browser visual, keyboard, clipboard or print verification is claimed. The managed preview browser is unavailable and private live-site access requires owner login; no alternate server/browser was launched.
+- Application/new-report version and asset cache references are 2.10.1. No GitHub push or Site publication was performed by this implementation task.
+
+## 2026-10-13 v2.9.1 notice removal
+
+- Removed only the repeated generic NEC-verification notice from newly calculated outputs, summaries and PDFs; no replacement notice or empty result-warning boxes.
+- Preserved specific scope limits, validation and conditional warnings, dated source provenance, and the v2.9.0 audit below.
+- All 33 `npm test` suites pass, including modeled UI absence checks and pre-edit historical summary/PDF SHA-256 regressions.
+- Every distribution JavaScript file passes `node --check`; `git diff --check` passes.
+- Version/cache references and new snapshots identify 2.9.1. No browser visual QA, deployment or GitHub push was performed in this patch.
+
+## 2026-10-13 v2.9.0 audit update
+
+The named modeled provisions have now been checked against the actual published NEC 2023 text. See `VERIFICATION-STATUS.md` for exact sources, corrections and bounds. `npm test` includes all prior suites and new published-code regressions for terminal blocks, exact EMT permitted areas and boundaries, provisional parallel-floor EGC/EMT results, source dates and historical-report preservation. This update does not certify an installation; real-browser QA and deployment are separately reported. The prior dated QA report below is preserved as historical evidence.
+
 Checked: 2026-10-11 UTC. This report covers the local upgrade; it does not certify an electrical installation or establish the deployed version.
 
 ## Result
@@ -101,3 +155,48 @@ Verification: all 26 npm test suites pass. All dist/*.js files pass node --check
 - Modeled copy/PDF/save/load: current 2.6.0 summaries include method/scope; old targets are dropped on load; original snapshots and old PDF outputs remain unchanged. Optional integrated conductor/service targets and 700-kcmil calculations still pass their existing suites.
 - NEC 2017 Table 9 is an explicit older source, not represented as independently verified final 2023 data. 2021 IECC C405.10 limits combined-path drop where applicable; the standalone status does not certify compliance.
 - Real-browser visual/keyboard/download QA was not run. The known owner-login handoff remains pending; it was not retried. No screenshots or deployed-site QA claimed.
+
+## v2.6.1 — aluminum raceway and concise input labels
+
+- All 27 `npm test` suites passed, including 936 sourced Table 9 coefficient/formula cases across PVC, Steel and Aluminum raceways, both conductor materials, both phases and four PF values.
+- Added Table 9 aluminum-conduit resistance data for every supported size through 750 kcmil. PVC and aluminum share the explicitly combined reactance column, but aluminum resistance is independently selected. Source: NEC 2017 Table 9, printed page 70–690 / PDF page 693, linked from the calculator.
+- Modeled UI verifies Steel / Aluminum / PVC options, the Power factor label, retained lagging displacement explanation in Input guidance, leading-PF limitation and actual-current guidance. Raceway switching checks distinct resistance/reactance values for both conductor materials. Current copy/PDF snapshots retain Aluminum selection and method/scope.
+- Existing tests still cover the 600 V scope, unsupported #14 aluminum and 700 kcmil, threshold colors, integrated model isolation and immutable historical reports.
+- All `dist/*.js` files pass `node --check`; `git diff --check` is clean. App/cache/snapshot version is 2.6.1.
+- Real-browser visual/keyboard QA was not run; the existing owner-login handoff was not retried. No deployment or GitHub changes were made by this implementation task.
+
+## v2.7.0 — cable tray screening and favorites dashboard
+
+- All 31 aggregate `npm test` suites passed against the final code. All `dist/*.js` files pass `node --check`; `git diff --check` is clean. App/cache/snapshot version is 2.7.0.
+- New cable-tray engine: 167 formula, exact-boundary, geometry, invalid-number and scope checks cover both tray constructions; below-4/0, 4/0-and-larger and mixed power methods; control/signal-only depth cap; exact 9-in. solid table value; negative residual budgets; width auto-selection, selected failures and over-range behavior. Status comparisons retain unrounded values and use no fill-expanding tolerance.
+- Tray modeled UI/report integration verifies actual-OD row inputs, name escaping, numeric edits, conditional size-class controls, single-conductor rejection, highest cable-rating limit, conservative power-depth scope, row additions, reset, source edition, complete copy/PDF input rows, named saved-load workflow and immutable saved snapshots/PDF.
+- Source qualification is explicitly visible in results and exported reports: NFPA 2023-cycle development record and Eaton 2014 guide. No claim of independent verification against final adopted NEC. Physical-fill screening is separate from ampacity, tray structural loading, bonding, cable packing and installation approval.
+- Dashboard persistence and modeled UI tests cover genuine user calculation activity, no generated activity from default visits/reset, keyboard-semantic star buttons, repeated toggling without hash navigation, focus restoration, storage reload, recent-state resume/current-engine recalculation, separate saved reports, local-storage isolation, blocked/full storage warnings, corruption preservation, JSON sanitization and HTML escaping.
+- Existing conductor/service/transformer/protection/drop/box/conduit regression suites and historical report migration checks remain green. Existing records are not rewritten by dashboard state.
+- Real-browser visual, keyboard and download QA was not run. The private-site owner-login handoff remains pending; it was not retried. Chromium presence was checked, but no browser/server was launched and no alternate preview route or permission escalation was attempted. No deployed-site QA or screenshots are claimed.
+- Implementation task made no deployment, Git commit or GitHub push.
+
+## v2.8.0 — inline favorites, tray layouts and parallel voltage drop
+
+- All 31 aggregate `npm test` suites pass. Every `dist/*.js` passes `node --check`; `git diff --check` is clean. App, cache and current-snapshot versions are 2.8.0.
+- Favorite modeled-DOM tests cover SVG fill states, sidebar/title/tool-list peers, repeated toggling, persistence, no hash navigation, focus and storage failures. Static CSS checks cover the 276px sidebar, one-line labels and accessible full title text. Real-browser visual and keyboard testing is not claimed.
+- 318 tray engine checks (151 new) cover the preserved multiconductor rules, exact-size classification, legacy records, bounded single-conductor methods, 1/0–4/0 mixed-size diameter sums, 250–750 area allowances, triangle/square envelopes, quantity divisibility, single-layer restrictions, eligibility/rung-spacing conditions, and product-specific OD provenance/voltage guards. UI workflows cover size changes, Cu/Al reference selection, manual overrides, grouping, report inputs, PDF and immutable saved snapshots.
+- Standalone VD tests include 936 baseline impedance/PF cases and 1,584 parallel-current-sharing cases; integer 1–20 set limits, minimum 1/0 size, one-decimal total/per-set currents, legacy one-set migration, saved/copy/PDF output and integrated-sizing isolation all pass.
+- NEC tray methods remain source-bounded screening using NFPA 2023-cycle development material and Eaton's 2014 guide, not independently verified final adopted-code certification. Layouts do not confer ampacity or installation approval. Southwire reference ODs are approximate and require verification against purchased cable.
+- No new deployment or remote push was performed for this local verification. Browser QA remains pending the existing access/environment limitation; numerical, modeled-DOM and static checks are the completed evidence.
+
+## v2.8.1 — provenance qualification / known tray arrangement regression
+
+- Official NEC 2023 reader is the new reference destination; base-text verification remains pending behind reader sign-in. Tests cannot establish code compliance. See `VERIFICATION-STATUS.md`.
+- NEC-based calculations and new summaries/PDFs retain an explicit pending-verification warning. Historical record exports remain unchanged.
+- Replaced citation-specific tests with exact official-reader/pending-status assertions. Existing numerical/boundary/legacy suites remain in the aggregate test command.
+- Added `provenance-tests.mjs`: pending labels and warnings, official reference URLs, manufacturer product versus code/physics distinction, and prohibited large-cable triangle/square cases for ladder/solid trays at auto/6/36-in widths.
+- Existing tray stacking regression now requires failed status and null supported selection/minimum. Separate numerical-fit diagnostics are preserved.
+- Full `npm test`, JavaScript syntax checks and `git diff --check` are required for this revision. This entry records automated/modelled coverage; it does not claim a live browser visual inspection or published-code verification.
+
+## v2.10.0 — raceways, conservative parallel-floor grounding and concise copy
+
+- Full aggregate `npm test` passed, every `dist/*.js` passed `node --check`, and `git diff --check` is clean.
+- 1,130 new checks cover all five raceway tables, exact/under/over published fill boundaries, Cu/Al configurations, final physical EGC fill, parallel-floor sizing with/without VD, unchanged non-floor examples, concise copy and comprehensive reports.
+- UI regression covers raceway selection, navigation, report inputs, save/load/reset, date-free displayed labels, clipboard success and fallback. Existing historical summary/PDF hashes remain unchanged.
+- Real-browser visual/keyboard QA and live deployment are not part of this implementation task; no screenshot or deployment claim.

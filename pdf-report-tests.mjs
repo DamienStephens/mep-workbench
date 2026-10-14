@@ -12,7 +12,7 @@ const bytes=createPDF(snapshot),text=new TextDecoder().decode(bytes);assert.ok(t
 assert.equal(pdfText('√3 × 30°C ≥ 4 in² → ¼ Ω'),'sqrt3  x  30 deg C >= 4 in^2  ->  1/4 ohm');
 const dir=mkdtempSync(join(tmpdir(),'mep-report-')),file=join(dir,'service-report.pdf');writeFileSync(file,bytes);
 const extract=spawnSync('pdftotext',['-layout',file,'-'],{encoding:'utf8'});
-if(!extract.error){assert.equal(extract.status,0,extract.stderr);assert.match(extract.stdout,/Total service OCPD: 800 A/);assert.match(extract.stdout,/SOURCE REFERENCES/);assert.match(extract.stdout,/www.nfpa.org/);assert.match(extract.stdout,/Separate grounding and bonding design required/);}
+if(!extract.error){assert.equal(extract.status,0,extract.stderr);assert.match(extract.stdout,/Total service OCPD: 800 A/);assert.match(extract.stdout,/SOURCE REFERENCES/);assert.match(extract.stdout,/link.nfpa.org/);assert.match(extract.stdout,/Separate grounding and bonding design required/);}
 const info=spawnSync('pdfinfo',[file],{encoding:'utf8'});if(!info.error){assert.equal(info.status,0);assert.match(info.stdout,/Page size:\s+612 x 792/);}
 const long=structuredClone(snapshot);long.projectName='W'.repeat(100);long.result.warnings.push('Long source '+('https://example.com/'+ 'abcdef'.repeat(100)));const longBytes=createPDF(long);writeFileSync(join(dir,'long-report.pdf'),longBytes);const parsed=spawnSync('pdftotext',[join(dir,'long-report.pdf'),'-'],{encoding:'utf8'});if(!parsed.error)assert.equal(parsed.status,0);
 const invalid=structuredClone(snapshot);invalid.result.error='Invalid calculation';assert.throws(()=>createPDF(invalid),/valid calculated/);

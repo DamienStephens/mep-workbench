@@ -10,8 +10,9 @@ const fromLabel=l=>conductors.find(w=>`${w.size} ${Number(w.size)>=250?'kcmil':'
 for(const fn of [conductor,service]){
  const p={...base};delete p.voltageDropEnabled;
  eq(fn(p),fn({...p,voltageDropEnabled:false,current:'bad',length:'bad',voltage:'bad',target:'bad'}),'Disabled inputs must not affect old result');
- for(const update of [{current:''},{current:undefined},{current:-1},{current:101},{current:Infinity},{length:-1},{length:''},{target:0},{target:101},{target:''},{phase:1},{phase:2},{voltage:120},{voltage:1001},{voltage:230,voltageMode:'custom'},{configuration:'split-phase-3-wire',phase:1,voltage:120}])check(fn({...base,...update}).error,`Reject ${JSON.stringify(update)}`);
- check(!fn({...base,voltage:230,voltageMode:'custom',voltageConfirmed:true}).error,'Confirmed custom voltage works');
+ for(const update of [{current:''},{current:undefined},{current:-1},{current:101},{current:Infinity},{length:-1},{length:''},{target:0},{target:101},{target:''},{phase:1},{phase:2},{voltage:120},{voltage:1001},{configuration:'split-phase-3-wire',phase:1,voltage:120}])check(fn({...base,...update}).error,`Reject ${JSON.stringify(update)}`);
+ check(!fn({...base,voltage:230,voltageMode:'custom'}).error,'Custom voltage works without a confirmation gate');
+ check(fn({...base,voltage:1001,voltageMode:'custom'}).error.includes('1,000 V'),'Low-voltage conductor model keeps its own scope limit');
  check(!fn({...base,configuration:'split-phase-3-wire',phase:1,voltage:240}).error,'Balanced split phase works');
  for(const zero of [{length:0},{current:0}]){
   const r=fn({...base,...zero});check(!r.error,'Zero length/current valid');eq(value(r,'Estimated drop'),0);eq(value(r,'Sizing basis'),'Ampacity / OCPD controls');
@@ -24,7 +25,7 @@ eq(value(example,'Copper conductor per set'),'3/0 AWG');
 eq(value(example,'Estimated voltage drop'),5.326);
 eq(value(example,'Estimated drop'),2.561);
 eq(value(example,'Modeled Cu EGC per raceway'),'2 AWG');
-eq(value(example,'Minimum EMT per set'),'2 in.');
+eq(value(example,'Minimum raceway per set'),'2 in.');
 eq(value(example,'Actual fill per raceway'),27.399);
 check(example.steps.join(' ').includes('separately entered'),'Current distinguished from sizing load');
 check(example.warnings.join(' ').includes('reactance'),'Resistance-method limitation');
@@ -46,7 +47,7 @@ for(const material of ['copper','aluminum'])for(const configuration of Object.ke
  const selected=conductors.find(w=>w.cm>=initialWire.cm&&100*rawDrop(w)/p.voltage<=p.target);
  if(!selected){check(r.error,'Exhausted conductor range rejects');continue;}
  const baseEGC=!isService?fromLabel(value(initial,'Base-minimum Cu EGC per raceway')):null;
- const ground=baseEGC?conductors.find(w=>w.cm>=baseEGC.cm*selected.cm/initialWire.cm):null;
+ const ground=baseEGC?conductors.find(w=>w.cm>=(initial.conservativeGrounding?Math.max(baseEGC.cm,selected.cm):baseEGC.cm*selected.cm/initialWire.cm)):null;
  if(!isService&&!ground){check(r.error,'Exhausted EGC range rejects');continue;}
  check(!r.error,JSON.stringify(p));
  eq(fromLabel(value(r,label(p,isService))).size,selected.size,'Smallest conductor satisfying both criteria');
@@ -54,10 +55,10 @@ for(const material of ['copper','aluminum'])for(const configuration of Object.ke
  eq(value(r,'Initial ampacity conductor per set'),value(initial,label(p,isService)),'Original ampacity floor');
  check(value(r,isService?'Combined phase ampacity':'Combined usable ampacity')>=value(r,isService?'Total service OCPD':'Total OCPD'),'Ampacity preserved');
  if(isService){check(!r.results.some(x=>/EGC|EMT|fill/i.test(x.label)),'Service does not size grounding/conduit');continue;}
- eq(fromLabel(value(r,'Modeled Cu EGC per raceway')).size,ground.size,'EGC rounds up using final/initial CM ratio');
+ eq(fromLabel(value(r,r.conservativeGrounding?'Conservative Cu EGC per raceway':'Modeled Cu EGC per raceway')).size,ground.size,'EGC rounds up using final/initial CM ratio');
  const area=circuitConfigurations[configuration].physical*selected.area+ground.area;
- const emt=conduitSizes.find(c=>area<=c.area*.4);
- eq(value(r,'Minimum EMT per set'),emt?`${emt.size} in.`:'Over supported 4 in. range','Final EGC used in EMT fill');
+ const emt=conduitSizes.find(c=>area<=c.fill40);
+ eq(value(r,'Minimum raceway per set'),emt?`${emt.size} in.`:'Over supported 4 in. range','Final EGC used in EMT fill');
  if(emt)eq(value(r,'Actual fill per raceway'),Number((100*area/emt.area).toFixed(3)),'Fill percent');
 }
 // Near-target boundary: select using raw values, never rounded display percentages.

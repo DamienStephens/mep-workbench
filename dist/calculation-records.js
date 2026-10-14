@@ -1,5 +1,5 @@
 // Local-only, versioned snapshots. Never discard corrupt or full storage silently.
-export const CURRENT_APP_VERSION = '2.6.0';
+export const CURRENT_APP_VERSION = '2.12.0';
 export const RECORDS_KEY = 'mep-workbench-calculations-v1';
 export const MAX_RECORDS = 100;
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -50,26 +50,44 @@ function validateSnapshot(s) {
   if(JSON.stringify(s).length>150000) throw Error('This calculation is too large to save or export.');
   return s;
 }
+function trayQuantity(state,row) {
+  const single=state.cableKind==='single',individuals=single?'individual conductors':'cables';
+  // Versionless inputs count physical items. Only the new state schema counts
+  // triangle/square packages; historical snapshot display text is never rebuilt.
+  if(state.quantityVersion!==2) return `${row.count} ${individuals}`;
+  const groupSize=row.arrangement==='triangle'?3:row.arrangement==='square'?4:1;
+  if(groupSize>1) return `${row.count} group${Number(row.count)===1?'':'s'} of ${groupSize} (${Number(row.count)*groupSize} total ${individuals})`;
+  return `${row.count} individual ${single?'conductors':'cables'}`;
+}
 export function createSnapshot(module, state, result, meta={}) {
   if(!object(module) || !object(state) || !object(result) || result.error || !result.results?.length) throw Error('A valid calculated result is required. Check the inputs and calculate again.');
   const fields=module.fields || [];
   for(const f of fields) {
     if(f.when && !f.when(state)) continue;
     const value=state[f.key];
-    if(['number','voltage','protection-voltage'].includes(f.type) && (String(value??'').trim()==='' || !Number.isFinite(Number(value)) || (f.min!=null&&Number(value)<f.min) || (f.max!=null&&Number(value)>f.max) || (f.step===1&&!Number.isInteger(Number(value))))) throw Error(`Check ${f.label} before saving or exporting.`);
+    if(['number','voltage','protection-voltage'].includes(f.type) && (String(value??'').trim()==='' || !Number.isFinite(Number(value)) || (f.min!=null&&Number(value)<f.min) || ((f.maxFor?f.maxFor(state):f.max)!=null&&Number(value)>(f.maxFor?f.maxFor(state):f.max)) || (f.step===1&&!Number.isInteger(Number(value))))) throw Error(`Check ${f.label} before saving or exporting.`);
   }
   const inputRows=fields.filter(f=>!f.when||f.when(state)).map(f=>{
     const dynamic=f.dynamic?.(state), label=dynamic?.[0]||f.label, unit=dynamic?.[1]??f.unit;
     const options=typeof f.options==='function'?f.options(state):f.options;
     const selected=options?.find(([v])=>String(v)===String(state[f.key]));
-    return {label:label+(unit?` (${unit})`:''),value:selected?String(selected[1]):printable(state[f.key])};
+    return {label:label+(unit?` (${unit})`:''),value:f.reportValue?String(f.reportValue(state)):selected?String(selected[1]):printable(state[f.key])};
   });
-  if(state.rows) inputRows.push(...state.rows.map((r,i)=>({label:`Conductor group ${i+1}`,value:`${r.count} x ${r.size} ${Number(r.size)>=250?'kcmil':'AWG'}`})));
+  if(module.id==='tray'&&state.rows)inputRows.push(...state.rows.map((r,i)=>({label:`Cable group ${i+1}`,value:`${r.name}: ${trayQuantity(state,r)} x ${r.od} in. overall diameter; ${r.size?`${r.size} ${Number(r.size)>=250?'kcmil':'AWG'}`:r.sizeClass==='large'?'4/0 AWG or larger (saved class)':'smaller than 4/0 AWG (saved class)'}; arrangement: ${r.arrangement||'unspecified (legacy area screening)'}; diameter source: ${r.diameterReference||'Manual actual cable OD'}${r.diameterReferenceUrl?' · '+r.diameterReferenceUrl:''}${state.service==='control'?' (size not used for control-only area rule)':''}`})));
+  else if(state.rows) inputRows.push(...state.rows.map((r,i)=>({label:`Conductor group ${i+1}`,value:`${r.count} x ${r.size} ${Number(r.size)>=250?'kcmil':'AWG'}`})));
+  if(module.id==='tray'&&state.quantityVersion===2&&result.effectiveRungSpacing!=null) inputRows.push({label:'Ladder rung spacing basis',value:`${result.effectiveRungSpacing} in. assumed for design; verify actual installation`});
   if(state.ambientBasis) inputRows.push({label:'Ambient design basis',value:String(state.ambientBasis)});
   if(!fields.length) inputRows.push(...Object.entries(state).map(([label,value])=>({label,value:printable(value)})));
-  const s={moduleId:module.id,moduleTitle:module.title||module.id,inputs:state,inputRows,result,limitations:module.limitations||[],appVersion:meta.appVersion||CURRENT_APP_VERSION,codeEdition:meta.codeEdition||'NEC 2023 reference baseline; verify adopted edition and local amendments',generatedAt:meta.generatedAt||new Date().toISOString(),projectName:meta.projectName||'Untitled project',calculationName:meta.calculationName||module.title||module.id};
+  const s={moduleId:module.id,moduleTitle:module.title||module.id,inputs:state,inputRows,result,limitations:module.limitationsFor?.(state)||module.limitations||[],appVersion:meta.appVersion||CURRENT_APP_VERSION,codeEdition:meta.codeEdition||'NEC 2023 reference baseline; verify adopted edition and local amendments',generatedAt:meta.generatedAt||new Date().toISOString(),projectName:meta.projectName||'Untitled project',calculationName:meta.calculationName||module.title||module.id};
   validateSnapshot(s);
   return clone(s);
+}
+// Report-format additions apply only to their release and later. Older saved
+// summaries/PDFs retain their original disclaimer and byte layout.
+export function engineeringReviewNote(appVersion) {
+  const version=appVersion.match(/^(\d+)\.(\d+)\.(\d+)$/)?.slice(1).map(Number);
+  return version&&(version[0]>2||(version[0]===2&&(version[1]>10||(version[1]===10&&version[2]>=2))))
+    ? 'Not a substitute for electrical engineer or electrician judgement.' : '';
 }
 // Display text is frozen in new result rows. Historical snapshots without it
 // keep their original precision; never reformat a stored report on read/export.
@@ -80,7 +98,14 @@ export function summaryFromSnapshot(snapshot) {
   if(s.moduleId==='conductor'&&!s.result.results.some(r=>r.label==='Estimated voltage drop')) lines.push('Voltage drop: not calculated for this snapshot; check the actual circuit separately.');
   if(s.moduleId==='service') lines.push(`Service neutral, grounding, bonding and conduit fill: not calculated; separate design required.${s.result.results.some(r=>r.label==='Estimated voltage drop')?'':' Voltage drop is not calculated for this snapshot.'}`);
   lines.push('','METHOD',...s.result.steps.map((x,i)=>`${i+1}. ${x}`),'','ASSUMPTIONS, WARNINGS & SCOPE',...Array.from(new Set([...s.result.warnings,...s.limitations])).map(x=>`- ${x}`),'','SOURCES',...s.result.sources.map(x=>`${x.label}${x.url?'\n'+x.url:''}`),'','Design aid only. Verify adopted code, equipment listings and actual installation conditions with a qualified professional.');
+  const reviewNote=engineeringReviewNote(s.appVersion);
+  if(reviewNote) lines.push(reviewNote);
   return lines.join('\n');
+}
+// Clipboard is intentionally inputs and outputs only; full saved/PDF reports retain context.
+export function copySummaryFromSnapshot(snapshot) {
+  const s=validateSnapshot(snapshot);
+  return [s.moduleTitle,'','INPUTS',...s.inputRows.map(r=>`${r.label}: ${r.value}`),'','OUTPUTS',...s.result.results.map(r=>`${r.label}: ${r.displayValue??r.value}${r.unit?' '+r.unit:''}`)].join('\n');
 }
 export function buildSummary(module,state,result,meta={}) { return summaryFromSnapshot(createSnapshot(module,state,result,meta)); }
 export function createRecordStore(storage) {

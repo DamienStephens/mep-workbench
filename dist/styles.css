@@ -32,12 +32,15 @@ h2,h3{font-size:14px;font-weight:600;line-height:1.5}
 .skip-link{position:fixed;left:16px;top:-80px;background:var(--surface);padding:12px;z-index:100}
 .skip-link:focus{top:16px}
 .app-shell{min-height:100vh;display:flex}
-.sidebar{position:fixed;inset:0 auto 0 0;width:184px;padding:18px 12px;background:var(--surface);border-right:1px solid var(--line);overflow-y:auto}
+.sidebar{position:fixed;inset:0 auto 0 0;width:276px;padding:18px 12px;background:var(--surface);border-right:1px solid var(--line);overflow-y:auto}
 .brand{display:flex;align-items:center;min-height:44px;padding:0 12px;margin-bottom:24px;font-size:15px;font-weight:650;letter-spacing:-.3px;text-decoration:none}
-.nav-item{display:flex;align-items:center;min-height:44px;padding:10px 12px;margin:2px 0;border-left:2px solid transparent;text-decoration:none;color:var(--muted);font-size:13px}
+.nav-item{display:block;min-height:44px;padding:10px 12px;margin:2px 0;border-left:2px solid transparent;text-decoration:none;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-tool{display:flex;align-items:center;min-width:0;gap:0}
+.nav-tool>.nav-item{flex:1;min-width:0}
+.nav-tool>.favorite-toggle{flex:0 0 44px}
 .nav-item:hover{background:var(--subtle);color:var(--ink)}
 .nav-item.active{border-left-color:var(--ink);color:var(--ink);font-weight:600}
-.main-wrap{margin-left:184px;width:calc(100% - 184px);min-width:0}
+.main-wrap{margin-left:276px;width:calc(100% - 276px);min-width:0}
 .topbar{display:flex;justify-content:flex-end;align-items:center;min-height:64px;padding:10px 32px}
 .mobile-brand{display:none}
 .theme-toggle,.button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;min-width:44px;padding:9px 12px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--ink);font-size:12px;font-weight:500;text-decoration:none}
@@ -46,8 +49,11 @@ h2,h3{font-size:14px;font-weight:600;line-height:1.5}
 .theme-toggle:hover,.button:hover{background:var(--subtle)}
 .button:disabled{opacity:.45;cursor:default}
 main{max-width:1240px;margin:auto;padding:8px 32px 40px}
-.page-header{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:24px}
-.actions{display:flex;gap:8px;flex-shrink:0}
+.page-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;margin-bottom:24px}
+.tool-heading{display:flex;align-items:center;gap:8px;min-width:0}
+.tool-heading h1{min-width:0;overflow-wrap:break-word}
+.tool-heading>.favorite-toggle{flex-shrink:0}
+.actions{display:flex;gap:8px;flex-shrink:0;max-width:100%}
 .module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 32px}
 .module-card{display:flex;align-items:center;gap:12px;padding:18px 0;min-height:76px;border-bottom:1px solid var(--line);text-decoration:none}
 .module-card:nth-last-child(-n+2){border-bottom:0}
@@ -58,7 +64,7 @@ main{max-width:1240px;margin:auto;padding:8px 32px 40px}
 .reference-note{font-size:12px;line-height:1.6;color:var(--muted);margin:20px 0 0}
 .calculator-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:start}
 .panel,.result-hero,.metric-grid{min-width:0}
-.calculation-details,.info-panel{border-top:1px solid var(--line)}
+.additional-results,.calculation-details,.info-panel{border-top:1px solid var(--line)}
 .form-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 16px;padding:0 0 20px}
 .field{min-width:0}
 .field.full{grid-column:1/-1}
@@ -127,6 +133,9 @@ summary:hover{color:var(--ink)}
   .brand{display:none}
   .sidebar nav{display:flex;overflow-x:auto;padding:6px 12px;gap:4px;scrollbar-width:thin}
   .nav-item{flex-shrink:0;margin:0;padding:10px;font-size:12px;border-left:0;border-bottom:2px solid transparent}
+  .nav-tool{flex-shrink:0}
+  .nav-tool>.nav-item{flex:0 0 auto}
+  .nav-tool>.favorite-toggle{margin-left:-4px}
   .nav-item.active{border-bottom-color:var(--ink)}
   .main-wrap{margin:0;width:100%}
   .topbar{min-height:60px;padding:8px 16px;justify-content:space-between}
@@ -213,3 +222,27 @@ summary:hover{color:var(--ink)}
 [data-theme="dark"] .result-hero.drop-orange .result-value,[data-theme="dark"] .result-hero.drop-orange .result-caption{color:#fdba74}
 [data-theme="dark"] .result-hero.drop-red .result-value,[data-theme="dark"] .result-hero.drop-red .result-caption{color:#fca5a5}
 @media print{.result-hero.drop-green .result-value,.result-hero.drop-green .result-caption{color:#166534}.result-hero.drop-orange .result-value,.result-hero.drop-orange .result-caption{color:#9a3412}.result-hero.drop-red .result-value,.result-hero.drop-red .result-caption{color:#b91c1c}}
+
+/* Personal dashboard: no inferred analytics, only local tools and actual work. */
+.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--muted);margin-bottom:12px}.dashboard-section{margin:32px 0}.section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}.section-heading h2{font-size:17px;margin:0}.section-heading>a{font-size:12px;color:var(--muted)}.dashboard-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.dashboard-card{position:relative;border:1px solid var(--line);border-radius:12px;background:var(--surface)}.dashboard-card>a{display:block;padding:24px;text-decoration:none;color:var(--ink);height:100%}.dashboard-card h3{font-size:17px;padding-right:30px;margin:0 0 12px}.dashboard-card p{font-size:13px;color:var(--muted);line-height:1.6;min-height:42px}.dashboard-card a>span{font-size:12px}.favorite-toggle{line-height:1;min-width:44px;min-height:44px;padding:9px;background:transparent;color:var(--muted)}.favorite-toggle:hover,.favorite-toggle[aria-pressed="true"]{background:transparent;color:var(--ink)}.favorite-toggle .favorite-icon{width:24px;height:24px;display:block}.dashboard-card>.favorite-toggle{position:absolute;right:12px;top:14px}.dashboard-empty{padding:24px;border:1px dashed var(--line);border-radius:10px;font-size:13px;line-height:1.7;color:var(--muted)}.dashboard-empty p{margin:0 0 12px}.dashboard-columns{display:grid;grid-template-columns:1fr 1fr;gap:28px}.dashboard-list{border-top:1px solid var(--line)}.recent-entry{display:flex;flex-direction:column;align-items:flex-start;gap:7px;width:100%;padding:18px 0;background:transparent;border:0;border-bottom:1px solid var(--line);font:inherit;color:var(--ink);text-align:left;text-decoration:none;cursor:pointer;overflow-wrap:anywhere}.recent-entry strong{font-size:14px}.recent-entry span,.recent-entry small{font-size:12px;color:var(--muted)}.all-tools-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px}.tool-link{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:12px 0}.tool-link>a{flex:0 1 auto;min-width:0;font-size:14px;text-decoration:none;color:var(--ink)}.tool-link>a span{color:var(--muted);margin-left:8px}#all-tools{scroll-margin-top:20px}.tray-row{grid-column:1/-1;border-top:1px solid var(--line);padding-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px}.tray-row .tray-name{grid-column:1/-1}.tray-row .button{justify-self:start}.tray-guidance{grid-column:1/-1;color:var(--muted);font-size:12px;line-height:1.7}
+@media(max-width:1000px){.dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.dashboard-grid,.dashboard-columns,.all-tools-grid{grid-template-columns:1fr}.dashboard-columns{gap:0}.section-heading{align-items:flex-start}.dashboard-card p{min-height:0}.dashboard-section{margin:26px 0}.tray-row{grid-template-columns:1fr}.tray-row .tray-name{grid-column:auto}}
+@media print{.favorite-toggle{display:none!important}}
+
+/* Semantic fill/ampacity metrics reuse the standalone voltage-drop palette. */
+.metric-status{font-size:12px;line-height:1.5;margin-top:4px}
+.metric-green .metric-value,.metric-green .metric-status{color:#166534}
+.metric-orange .metric-value,.metric-orange .metric-status{color:#9a3412}
+.metric-red .metric-value,.metric-red .metric-status{color:#b91c1c}
+.metric-green .metric-unit,.metric-orange .metric-unit,.metric-red .metric-unit{color:inherit}
+[data-theme="dark"] .metric-green .metric-value,[data-theme="dark"] .metric-green .metric-status{color:#86efac}
+[data-theme="dark"] .metric-orange .metric-value,[data-theme="dark"] .metric-orange .metric-status{color:#fdba74}
+[data-theme="dark"] .metric-red .metric-value,[data-theme="dark"] .metric-red .metric-status{color:#fca5a5}
+@media print{[data-theme] .metric-green .metric-value,[data-theme] .metric-green .metric-status{color:#166534}[data-theme] .metric-orange .metric-value,[data-theme] .metric-orange .metric-status{color:#9a3412}[data-theme] .metric-red .metric-value,[data-theme] .metric-red .metric-status{color:#b91c1c}}
+/* Checked fill/ampacity values use text as well as accessible light/dark color.
+   Conditional and uncalculated results have no passing color. */
+.check-green .result-value,.check-green>.metric-status{color:#166534}
+.check-red .result-value,.check-red>.metric-status,.scope-note.check-red{color:#b91c1c}
+[data-theme="dark"] .check-green .result-value,[data-theme="dark"] .check-green>.metric-status{color:#86efac}
+[data-theme="dark"] .check-red .result-value,[data-theme="dark"] .check-red>.metric-status,[data-theme="dark"] .scope-note.check-red{color:#fca5a5}
+@media print{[data-theme] .check-green .result-value,[data-theme] .check-green>.metric-status{color:#166534}[data-theme] .check-red .result-value,[data-theme] .check-red>.metric-status,[data-theme] .scope-note.check-red{color:#b91c1c}}

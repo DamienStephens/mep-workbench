@@ -1,4 +1,4 @@
-import { createSnapshot, buildSummary, summaryFromSnapshot, createRecordStore } from './dist/calculation-records.js';
+import { createSnapshot, buildSummary, summaryFromSnapshot, copySummaryFromSnapshot, createRecordStore } from './dist/calculation-records.js';
 import { transformerProtection, evaluateTransformerProtection, migrateProtectionState,transformerBreakerOptions, transformerOcpdRatings, secondaryRuleConditions } from './dist/transformer-protection.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -9,7 +9,7 @@ const base={load:400,terminal:75,ambient:30,parallelSets:2,configuration:'three-
 let checks=0;
 const run=overrides=>{const r=calc.conductor({...base,...overrides});assert.equal(r.error,undefined,r.error);checks++;return Object.fromEntries(r.results.map(x=>[x.label,x.value]));};
 for(const [load,sets,size,egc,amp] of [[400,2,'3/0 AWG','3 AWG',400],[600,2,'350 kcmil','1 AWG',620],[800,3,'300 kcmil','1/0 AWG',855],[4000,10,'600 kcmil','500 kcmil',4200]]){
- const r=run({load,parallelSets:sets});assert.equal(r['Copper conductor per set'],size);assert.equal(r['Base-minimum Cu EGC per raceway'],egc);assert.equal(r['Combined usable ampacity'],amp);assert.equal(r['Separate EMT raceways'],sets);assert.equal(r['Total OCPD'],load);assert.equal(r['CCC per raceway'],3);assert.equal(r['Physical conductors per raceway incl. EGC'],4);
+ const r=run({load,parallelSets:sets});assert.equal(r['Copper conductor per set'],size);assert.equal(r['Base-minimum Cu EGC per raceway'],egc);assert.equal(r['Combined usable ampacity'],amp);assert.equal(r['Separate raceways'],sets);assert.equal(r['Total OCPD'],load);assert.equal(r['CCC per raceway'],3);assert.equal(r['Physical conductors per raceway incl. EGC'],4);
 }
 for(const material of ['copper','aluminum'])for(const configuration of Object.keys(calc.circuitConfigurations))for(const sets of [2,3,10,20]){
  const r=run({load:1,material,configuration,parallelSets:sets});assert.equal(r[material==='copper'?'Copper conductor per set':'Aluminum conductor per set'],'1/0 AWG');assert.equal(r['Base-minimum Cu EGC per raceway'],'14 AWG');assert.equal(r['CCC per raceway'],calc.circuitConfigurations[configuration].ccc);assert.ok(r['Combined usable ampacity']>=r['Total OCPD']);assert.ok(r['Actual fill per raceway']<=40);
@@ -27,14 +27,14 @@ for(const p of [{load:4001,parallelSets:20},{ocpd:5000,parallelSets:20},{ocpd:65
 for(const material of ['copper','aluminum'])for(const configuration of Object.keys(calc.circuitConfigurations))for(const ambient of [30,40,60,80])for(const sets of [1,2,5]){
  const r=run({load:30,material,configuration,ambient,parallelSets:sets});
  const w=calc.conductors.find(w=>r[`${material==='copper'?'Copper':'Aluminum'} conductor per set`].startsWith(w.size+' '));
- const ground=calc.conductors.find(w=>r['Base-minimum Cu EGC per raceway'].startsWith(w.size+' '));
+ const ground=calc.conductors.find(w=>(r['Conservative Cu EGC per raceway']??r['Base-minimum Cu EGC per raceway']).startsWith(w.size+' '));
  const c=calc.circuitConfigurations[configuration],af=({30:1,40:.91,60:.71,80:.41})[ambient],factor=c.ccc===4?.8:1,prefix=material==='copper'?'cu':'al';
  const amp=Math.min(w[prefix+'75'],w[prefix+'90']*af*factor)*sets;
  assert.ok(Math.abs(r['Combined usable ampacity']-amp)<.00051);assert.ok(amp>=r['Total OCPD']);
- const area=w.area*c.physical+ground.area,emt=calc.conduitSizes.find(x=>area<=x.area*.4);assert.equal(r['Minimum EMT per set'],`${emt.size} in.`);
+ const area=w.area*c.physical+ground.area,emt=calc.conduitSizes.find(x=>area<=x.area*.4);assert.equal(r['Minimum raceway per set'],`${emt.size} in.`);
 }
 const source=fs.readFileSync(new URL('./dist/app.js',import.meta.url),'utf8').replace(/^import[^\n]+\n/gm,'').replace(/route\(\);\s*$/,'');
-function ui(saved){const context=vm.createContext({createSnapshot, buildSummary, summaryFromSnapshot, createRecordStore, transformerProtection, evaluateTransformerProtection, migrateProtectionState,transformerBreakerOptions, transformerOcpdRatings, secondaryRuleConditions, calc,systemOptions,voltageOptions,structuredClone,console,localStorage:{getItem:()=>JSON.stringify(saved)},window:{addEventListener(){}}});vm.runInContext(source+';globalThis.ui={states,modules,defaults,fieldHTML,guidanceHTML};',context);return context.ui;}
+function ui(saved){const context=vm.createContext({createSnapshot, buildSummary, summaryFromSnapshot, copySummaryFromSnapshot, createRecordStore, transformerProtection, evaluateTransformerProtection, migrateProtectionState,transformerBreakerOptions, transformerOcpdRatings, secondaryRuleConditions, calc,systemOptions,voltageOptions,structuredClone,console,localStorage:{getItem:()=>JSON.stringify(saved)},window:{addEventListener(){}}});vm.runInContext(source+';globalThis.ui={states,modules,defaults,fieldHTML,guidanceHTML};',context);return context.ui;}
 for(const old of [{load:10,continuous:16,ccc:4,physicalCount:5,material:'aluminum'},{load:10,continuous:'16',ccc:2},{load:10,continuous:0,ccc:3}]){
  const u=ui({conductor:old}),s=u.states.conductor;assert.equal(s.ocpd,calc.standardOcpdRatings.find(v=>v>=Number(old.load)+1.25*Number(old.continuous)));assert.equal(s.configuration,'');assert.equal(s.parallelSets,1);assert.equal(s.continuous,undefined);assert.equal(s.ccc,undefined);assert.equal(s.physicalCount,undefined);assert.ok(s.migrationNotice.includes('125%'));assert.ok(calc.conductor(s).error);assert.equal(s.material,old.material??'copper');checks++;
 }

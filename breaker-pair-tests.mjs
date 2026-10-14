@@ -136,12 +136,13 @@ assert.deepEqual(options({kva:.1}).primaryOptions,[]);
 assert.match(val(transformerProtectionLimits({...base,kva:.1}),'Maximum modeled permitted primary OCPD'),/Outside modeled device range/);
 
 // Standard scope and voltage safeguards apply before any candidates are shown.
-for(const delta of [{kva:''},{kva:0},{kva:-1},{kva:Infinity},{kva:1e308},{phase:2},{primary:0},{primary:1001},{secondary:1001},{primary:123},{primary:123,primaryMode:'custom'},{scope:'autotransformer'},{protection:'unknown'}]){
+for(const delta of [{kva:''},{kva:0},{kva:-1},{kva:Infinity},{kva:1e308},{phase:2},{primary:0},{primary:1001},{secondary:1001},{primary:123},{scope:'autotransformer'},{protection:'unknown'}]){
  const r=options(delta);
  assert.ok(r.error,JSON.stringify(delta));
  assert.deepEqual(r.primaryOptions,[]);
  assert.deepEqual(r.secondaryOptions,[]);
 }
+assert.equal(options({primary:123,primaryMode:'custom'}).error,undefined);
 assert.equal(options({primary:123,primaryMode:'custom',primaryConfirmed:true}).error,undefined);
 
 // Optional checks off always ignore hidden selections, loads and direction.
@@ -154,7 +155,8 @@ const enabled={...full,ocpdCheckEnabled:true,conductorCheckEnabled:true};
 assert.deepEqual(good(evaluateTransformerProtection(enabled)).results.slice(0,-2),good(transformerProtection(full)).results);
 assert.deepEqual(good(evaluateTransformerProtection({...enabled,breakerSide:'secondary'})).results.slice(0,-2),good(transformerProtection(full)).results);
 for(const delta of [{primaryOcpd:0},{secondaryOcpd:0},{primaryOcpd:''},{secondaryOcpd:undefined}])assert.ok(evaluateTransformerProtection({...enabled,...delta}).error,'Full checks require both explicit selections');
-for(const delta of [{primaryOcpd:80},{secondaryOcpd:175},{designLoad:''},{designLoad:0},{lengthFt:11},{installationConfirmed:false},{terminal:90},{ambient:81},{parallelSets:0},{configuration:'single-phase-2-wire'},{secondaryRule:'unsupported'},{secondaryRule:'25ft',lengthFt:26}])assert.ok(evaluateTransformerProtection({...enabled,...delta}).error,JSON.stringify(delta));
+for(const delta of [{primaryOcpd:80},{secondaryOcpd:175},{designLoad:''},{designLoad:0},{lengthFt:11},{ambient:81},{parallelSets:0},{configuration:'single-phase-2-wire'},{secondaryRule:'unsupported'},{secondaryRule:'25ft',lengthFt:26}])assert.ok(evaluateTransformerProtection({...enabled,...delta}).error,JSON.stringify(delta));
+for(const delta of [{installationConfirmed:false},{terminal:90}]){const r=good(evaluateTransformerProtection({...enabled,...delta}));assert.match(r.warnings.join(' '),/unverified design assumption/);assert.doesNotMatch(r.steps.join(' '),/explicitly confirmed/);}
 assert.match(evaluateTransformerProtection({...enabled,primaryOcpd:80}).error,/below.*nameplate/);
 assert.match(evaluateTransformerProtection({...enabled,secondaryOcpd:175}).error,/below.*design load/);
 const auto=good(transformerProtection({...full,primaryOcpd:0,secondaryOcpd:0}));

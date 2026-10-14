@@ -4,14 +4,14 @@ import vm from 'node:vm';
 import * as calc from './dist/calc.js';
 import {systemOptions,voltageOptions} from './dist/voltage.js';
 import {transformerProtection,evaluateTransformerProtection,transformerProtectionLimits,migrateProtectionState,transformerBreakerOptions,transformerOcpdRatings,secondaryRuleConditions} from './dist/transformer-protection.js';
-import {createSnapshot,buildSummary,summaryFromSnapshot,createRecordStore} from './dist/calculation-records.js';
+import {createSnapshot,buildSummary,summaryFromSnapshot,copySummaryFromSnapshot,createRecordStore} from './dist/calculation-records.js';
 import {createPDF} from './dist/pdf-report.js';
 const source=fs.readFileSync(new URL('./dist/app.js',import.meta.url),'utf8').replace(/^import[^\n]+\n/gm,'').replace(/route\(\);\s*$/,'');
 function harness(saved={}){
  const data=new Map([['mep-workbench-v1',JSON.stringify(saved)]]),storage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)};
  const listeners={},nodes={},pdfs=[];let buttons=[];nodes['input[name="protection"]:checked']={focus(){this.focused=true}};
  for(const key of ['#main','#navigation','#calculator-form','#results','#sources','#reset','#print','#copy-summary','#export-pdf','#save-calculation','#action-status','#storage-status'])nodes[key]={innerHTML:'',textContent:'',addEventListener:(k,v)=>listeners[k]=v,querySelector:()=>null};
- const ctx=vm.createContext({calc,systemOptions,voltageOptions,createSnapshot,buildSummary,summaryFromSnapshot,createRecordStore:()=>createRecordStore(storage),transformerProtection,evaluateTransformerProtection,migrateProtectionState,transformerBreakerOptions,transformerOcpdRatings,secondaryRuleConditions,downloadPDF:s=>pdfs.push(s),structuredClone,console,localStorage:storage,location:{hash:''},navigator:{clipboard:{}},attachAmbientHelper(){},window:{addEventListener(){},scrollTo(){},print(){}},document:{querySelector:k=>nodes[k],querySelectorAll:s=>{if(s!=='[data-record-action]')return [];buttons=[...nodes['#main'].innerHTML.matchAll(/data-record-action="([^"]+)" data-record-id="([^"]+)"/g)].map(m=>({dataset:{recordAction:m[1],recordId:m[2]}}));return buttons}}});
+ const ctx=vm.createContext({calc,systemOptions,voltageOptions,createSnapshot,buildSummary,summaryFromSnapshot,copySummaryFromSnapshot,createRecordStore:()=>createRecordStore(storage),transformerProtection,evaluateTransformerProtection,migrateProtectionState,transformerBreakerOptions,transformerOcpdRatings,secondaryRuleConditions,downloadPDF:s=>pdfs.push(s),structuredClone,console,localStorage:storage,location:{hash:''},navigator:{clipboard:{}},attachAmbientHelper(){},window:{addEventListener(){},scrollTo(){},print(){}},document:{querySelector:k=>nodes[k],querySelectorAll:s=>{if(s!=='[data-record-action]')return [];buttons=[...nodes['#main'].innerHTML.matchAll(/data-record-action="([^"]+)" data-record-id="([^"]+)"/g)].map(m=>({dataset:{recordAction:m[1],recordId:m[2]}}));return buttons}}});
  vm.runInContext(source+';globalThis.ui={calculator,states,modules,savedLibrary,makeSnapshot};',ctx);
  return {ui:ctx.ui,nodes,store:createRecordStore(storage),pdfs,get buttons(){return buttons},change(name,value,tagName='SELECT'){listeners.change({type:'change',target:{name,value:String(value),tagName,dataset:{},matches:()=>true}})}};
 }
@@ -62,7 +62,7 @@ stale.ui.calculator('protection');assert.equal(stale.nodes['#save-calculation'].
 const invalid=harness({protection:{kva:75,phase:3,primary:480,secondary:208,protection:'dual',breakerSide:'primary',ocpdCheckEnabled:true,primaryOcpd:100,secondaryOcpd:350}});
 invalid.ui.calculator('protection');assert.match(invalid.nodes['#main'].innerHTML,/value="350" selected/);assert.equal(invalid.nodes['#save-calculation'].disabled,true);
 const s=h.ui.makeSnapshot(h.ui.modules.find(m=>m.id==='protection'),h.ui.states.protection,evaluateTransformerProtection(h.ui.states.protection));
-assert.equal(s.appVersion,'2.6.0');
+assert.equal(s.appVersion,'2.12.0');
 console.log('Bidirectional breaker UI: direction, options, resets, table-only/load split, invalid saved values and scope passed.');
 const ranges=harness();ranges.ui.calculator('protection');ranges.change('ocpdCheckEnabled',true);ranges.change('primaryOcpd',100);
 const rangeState=ranges.ui.states.protection;

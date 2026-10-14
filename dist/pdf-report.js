@@ -1,4 +1,4 @@
-import { summaryFromSnapshot } from './calculation-records.js?v=2.6.0';
+import { summaryFromSnapshot, engineeringReviewNote } from './calculation-records.js?v=2.12.0';
 // A dependency-free PDF 1.4 writer. ASCII output keeps xref byte offsets exact.
 // No network requests, uploaded data, mutable shared buffers or print dialog.
 export function pdfText(value) {
@@ -49,7 +49,9 @@ export function createPDF(snapshot) {
   text(`Generated: ${s.generatedAt} | Application: ${s.appVersion}`,{size:9});
   if(s.recordId){text(`Saved record: ${s.recordId}`,{size:9});text(`Saved: ${s.savedAt}`,{size:9});}
   text(`Code basis: ${s.codeEdition}`,{size:9,gap:8});
+  const reviewNote=engineeringReviewNote(s.appVersion);
   text('Design aid. Verify the adopted code, site conditions and equipment listings before use.',{size:9});
+  if(reviewNote) text(reviewNote,{size:9});
   heading('Inputs'); rows(s.inputRows);
   // Use snapshot-owned display text only; do not reinterpret legacy reports.
   heading('Results'); rows(s.result.results,true);

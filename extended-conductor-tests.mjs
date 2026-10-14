@@ -34,7 +34,7 @@ for(const module of ['conductor','service'])for(const material of ['copper','alu
   const area=(cf===1?3:4)*desired.area+ground.area;
   assert.equal(value(output,'Conductor area per raceway incl. EGC'),rounded(area));
   const emt=calc.conduitSizes.find(c=>area<=.4*c.area);
-  assert.equal(value(output,'Minimum EMT per set'),`${emt.size} in.`);
+  assert.equal(value(output,'Minimum raceway per set'),`${emt.size} in.`);
  }else assert.ok(output.results.every(r=>!/(EGC|EMT)/.test(r.label)));
  coverage.add(`${module}/${material}/${terminal}/${desired.size}`);checks++;
 }
@@ -44,7 +44,8 @@ for(const module of ['conductor','service']){
  assert.equal(calc[module](base).error,undefined);
  assert.match(calc[module]({...base,load:4001}).error,/4000 A|OCPD rating/);
  assert.match(calc[module]({...base,ocpd:5000}).error,/4000 A|OCPD rating/);
- assert.match(calc[module]({...base,terminal90Confirmed:false}).error,/explicit verification/);
+ assert.equal(calc[module]({...base,terminal90Confirmed:false}).error,undefined);
+ assert.match(calc[module]({...base,terminal90Confirmed:false}).warnings.join(' '),/design assumption, not verified equipment/);
 }
 for(const e of expected.slice(1))for(const count of [1,2,3,4,5,6]){
  const fraction=count===1?.53:count===2?.31:.4;

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import * as calc from './dist/calc.js';
-import {createSnapshot,buildSummary,summaryFromSnapshot,createRecordStore,projectKey,projectNames,defaultCalculationName,RECORDS_KEY,CURRENT_APP_VERSION} from './dist/calculation-records.js';
+import {createSnapshot,buildSummary,summaryFromSnapshot,copySummaryFromSnapshot,createRecordStore,projectKey,projectNames,defaultCalculationName,RECORDS_KEY,CURRENT_APP_VERSION} from './dist/calculation-records.js';
 const inputs={material:'copper',ocpd:100,configuration:'three-phase-4-wire',parallelSets:1,terminal:75,ambient:30,terminal90Confirmed:false};
 const module={id:'conductor',title:'Conductor sizing',fields:[{key:'ocpd',label:'OCPD Rating',type:'number',unit:'A',min:.001},{key:'material',label:'Material',type:'select',options:[['copper','Copper']]},{key:'ambient',label:'Ambient',type:'number',unit:'°C',min:-10,max:80}],limitations:['General circuits only.']};
 const result=calc.conductor(inputs),snapshot=createSnapshot(module,inputs,result,{projectName:'North Wing',calculationName:'Panel A',generatedAt:'2026-10-11T00:00:00.000Z'});
 assert.equal(snapshot.appVersion,CURRENT_APP_VERSION);inputs.ocpd=200;assert.equal(snapshot.inputs.ocpd,100);result.results[0].value='changed';assert.notEqual(snapshot.result.results[0].value,'changed');
-assert.match(summaryFromSnapshot(snapshot),/Total OCPD/);assert.match(summaryFromSnapshot(snapshot),/Base-minimum Cu EGC per raceway/);assert.match(summaryFromSnapshot(snapshot),/Minimum EMT per set/);assert.match(summaryFromSnapshot(snapshot),/Voltage drop: not calculated/);assert.match(summaryFromSnapshot(snapshot),/SOURCE/);
+assert.match(summaryFromSnapshot(snapshot),/Total OCPD/);assert.match(summaryFromSnapshot(snapshot),/Base-minimum Cu EGC per raceway/);assert.match(summaryFromSnapshot(snapshot),/Minimum raceway per set/);assert.match(summaryFromSnapshot(snapshot),/Voltage drop: not calculated/);assert.match(summaryFromSnapshot(snapshot),/SOURCE/);
 assert.throws(()=>createSnapshot(module,{...inputs,ocpd:''},result));assert.throws(()=>createSnapshot(module,inputs,{error:'failed',results:[]}));assert.throws(()=>createSnapshot(module,{...inputs,ocpd:Infinity},result));
 let raw=null,quota=false;const storage={getItem(){return raw},setItem(k,v){assert.equal(k,RECORDS_KEY);if(quota)throw Error('quota');raw=v}};const store=createRecordStore(storage);
 assert.deepEqual(store.list(),[]);const saved=store.save(snapshot,{projectName:'Project',calculationName:'Feeder'});assert.ok(saved.id);assert.equal(store.list().length,1);const loaded=store.load(saved.id);loaded.snapshot.inputs.ocpd=500;assert.equal(store.load(saved.id).snapshot.inputs.ocpd,100);

@@ -115,7 +115,7 @@ for(const appVersion of ['2.0.0','2.4.0','unversioned']){
   assert.match(text,/sqrt3/);
   assert.ok(!text.includes('sqrt\\(3\\)'));
 }
-for(const appVersion of ['2.5.0','2.10.0','3.0.0']){
+for(const appVersion of ['2.5.0','2.10.2','3.0.0']){
   const current=structuredClone(snapshot);current.appVersion=appVersion;
   assert.ok(new TextDecoder().decode(createPDF(current)).includes('sqrt\\(3\\)'));
 }

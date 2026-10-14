@@ -1,4 +1,4 @@
-import { createSnapshot, buildSummary, summaryFromSnapshot, createRecordStore } from './dist/calculation-records.js';
+import { createSnapshot, buildSummary, summaryFromSnapshot, copySummaryFromSnapshot, createRecordStore } from './dist/calculation-records.js';
 import { transformerProtection, evaluateTransformerProtection, migrateProtectionState,transformerBreakerOptions, transformerOcpdRatings, secondaryRuleConditions } from './dist/transformer-protection.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -23,7 +23,7 @@ assert.equal(value(run({load:30,material:'aluminum'}),'Total OCPD'),30);
 // A full-size neutral occupies space; 4-wire three-phase conservatively counts four CCC.
 const cu3=run({load:40}),cu4=run({load:40,configuration:'three-phase-4-wire'});
 assert.equal(value(cu3,'Copper conductor per set'),value(cu4,'Copper conductor per set'));
-assert.equal(value(cu3,'Minimum EMT per set'),'3/4 in.');
+assert.equal(value(cu3,'Minimum raceway per set'),'3/4 in.');
 assert.equal(value(cu4,'Physical conductors per raceway incl. EGC'),5);
 assert.equal(value(cu4,'Conductor area per raceway incl. EGC'),Number((4*.0366+.0211).toFixed(3)));
 const al=run({load:100,material:'aluminum',configuration:'three-phase-4-wire'});
@@ -38,18 +38,18 @@ for(const delta of [{parallelSets:0},{parallelSets:-1},{parallelSets:1.5},{paral
 for(const material of ['copper','aluminum'])for(const load of [10,15,20,25,30,40,60,100,200,300])for(const configuration of Object.keys(calc.circuitConfigurations)){
  const r=run({material,load,configuration,parallelSets:load>=200?2:1});
  const size=value(r,material==='copper'?'Copper conductor per set':'Aluminum conductor per set').split(' ')[0];
- const egc=value(r,'Base-minimum Cu EGC per raceway').split(' ')[0];
+ const egc=value(r,r.conservativeGrounding?'Conservative Cu EGC per raceway':'Base-minimum Cu EGC per raceway').split(' ')[0];
  const n=calc.circuitConfigurations[configuration].physical;
  const area=conductors.find(w=>w.size===size).area*n+conductors.find(w=>w.size===egc).area;
- const min=conduitSizes.find(c=>area<=c.area*.4);
- assert.equal(value(r,'Minimum EMT per set'),min?`${min.size} in.`:'Over supported 4 in. range');
+ const min=conduitSizes.find(c=>area<=c.fill40);
+ assert.equal(value(r,'Minimum raceway per set'),min?`${min.size} in.`:'Over supported 4 in. range');
  assert.ok(!/NaN|Infinity/.test(JSON.stringify(r)));
  if(min)assert.ok(value(r,'Actual fill per raceway')<=40);
 }
 // Saved settings migration and selector/reset contract, using the actual UI module.
 const source=fs.readFileSync(new URL('./dist/app.js',import.meta.url),'utf8').replace(/^import[^\n]+\n/gm,'').replace(/route\(\);\s*$/,'');
 for(const saved of [{},{conductor:{ccc:8}},{conductor:{ccc:2}},{conductor:{ccc:2,physicalCount:5,material:'aluminum'}}]){
- const context=vm.createContext({createSnapshot, buildSummary, summaryFromSnapshot, createRecordStore, transformerProtection, evaluateTransformerProtection, migrateProtectionState,transformerBreakerOptions, transformerOcpdRatings, secondaryRuleConditions, calc,systemOptions,voltageOptions,structuredClone,console,localStorage:{getItem:()=>JSON.stringify(saved)},window:{addEventListener(){}}});
+ const context=vm.createContext({createSnapshot, buildSummary, summaryFromSnapshot, copySummaryFromSnapshot, createRecordStore, transformerProtection, evaluateTransformerProtection, migrateProtectionState,transformerBreakerOptions, transformerOcpdRatings, secondaryRuleConditions, calc,systemOptions,voltageOptions,structuredClone,console,localStorage:{getItem:()=>JSON.stringify(saved)},window:{addEventListener(){}}});
  vm.runInContext(source+';globalThis.ui={states,modules,defaults,fieldHTML};',context);
  const {states,modules,defaults,fieldHTML}=context.ui;
  assert.equal(states.conductor.ccc,undefined);assert.equal(states.conductor.physicalCount,undefined);
