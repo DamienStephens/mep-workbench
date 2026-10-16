@@ -62,7 +62,7 @@ stale.ui.calculator('protection');assert.equal(stale.nodes['#save-calculation'].
 const invalid=harness({protection:{kva:75,phase:3,primary:480,secondary:208,protection:'dual',breakerSide:'primary',ocpdCheckEnabled:true,primaryOcpd:100,secondaryOcpd:350}});
 invalid.ui.calculator('protection');assert.match(invalid.nodes['#main'].innerHTML,/value="350" selected/);assert.equal(invalid.nodes['#save-calculation'].disabled,true);
 const s=h.ui.makeSnapshot(h.ui.modules.find(m=>m.id==='protection'),h.ui.states.protection,evaluateTransformerProtection(h.ui.states.protection));
-assert.equal(s.appVersion,'2.12.0');
+assert.equal(s.appVersion,'2.14.0');
 console.log('Bidirectional breaker UI: direction, options, resets, table-only/load split, invalid saved values and scope passed.');
 const ranges=harness();ranges.ui.calculator('protection');ranges.change('ocpdCheckEnabled',true);ranges.change('primaryOcpd',100);
 const rangeState=ranges.ui.states.protection;

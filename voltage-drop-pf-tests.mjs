@@ -143,7 +143,7 @@ h.change('raceway','aluminum');
 await h.nodes['#copy-summary'].onclick();const summary=h.copied.at(-1);
 assert.match(summary,/Power factor.*0.8/);assert.match(summary,/Raceway: Aluminum/);assert.doesNotMatch(summary,/Power factor \(lagging\)|Steel \/ EMT/);assert.match(summary,/Starting Voltage/);assert.doesNotMatch(summary,/C405.10|2023 Chapter 9 Table 9|METHOD|SOURCES|WARNINGS/);assert.doesNotMatch(summary,/Design target|Target check|Minimum size for drop only/);
 h.nodes['#export-pdf'].onclick();const snapshot=h.pdfs.at(-1),pdf=new TextDecoder().decode(createPDF(snapshot));
-assert.equal(snapshot.appVersion,'2.12.0');assert.equal(snapshot.inputs.raceway,'aluminum');assert.match(pdf,/Aluminum/);assert.match(pdf,/Percentage voltage drop/);assert.match(pdf,/Starting Voltage/);assert.match(pdf,/not proof of a code violation/);
+assert.equal(snapshot.appVersion,'2.14.0');assert.equal(snapshot.inputs.raceway,'aluminum');assert.match(pdf,/Aluminum/);assert.match(pdf,/Percentage voltage drop/);assert.match(pdf,/Starting Voltage/);assert.match(pdf,/not proof of a code violation/);
 // New multi-set copy/PDF/save/load retains the total-current contract and precision.
 h.change('current',301,'INPUT');h.change('parallelSets',3,'INPUT');
 assert.equal(h.ui.states.drop.current,301);assert.equal(h.ui.states.drop.parallelSets,3);

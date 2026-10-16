@@ -253,7 +253,7 @@ assert.match(copied,/INPUTS/);assert.match(copied,/OUTPUTS/);assert.match(copied
 assert.doesNotMatch(copied,/METHOD|ASSUMPTIONS|SOURCES|Design aid|Optional:|Within published fill allowance/);
 h.nodes['#export-pdf'].onclick();
 const snapshot=h.pdfs.at(-1),frozen=JSON.stringify(snapshot),pdfBefore=createPDF(snapshot);
-assert.equal(snapshot.appVersion,'2.12.0');
+assert.equal(snapshot.appVersion,'2.14.0');
 assert.equal(snapshot.inputs.racewayType,'imc');
 assert.equal(snapshot.inputRows.at(-1).label,'Raceway type');
 assert.equal(row(snapshot.result,'Actual fill per raceway').status,'green');

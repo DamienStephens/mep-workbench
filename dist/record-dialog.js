@@ -1,4 +1,4 @@
-import { projectKey, projectNames, defaultCalculationName } from './calculation-records.js?v=2.12.0';
+import { projectKey, projectNames, defaultCalculationName } from './calculation-records.js?v=2.14.0';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let currentDialog=null;
 export function closeRecordDialog(){currentDialog?.close();}

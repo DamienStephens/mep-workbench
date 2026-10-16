@@ -1,3 +1,25 @@
+# v2.14.0 MV cable-reference update
+
+Source checks completed 2026-10-15/16. This release provides bounded copper MV cable presets through 35-kV class, including a 34.5-kV nominal line-to-line study. Exact table rows, source revisions, units, exclusions and assumptions are in `MV-CABLE-SOURCES.md`.
+
+- Southwire SPEC 46002 (MV-90, 2.4-kV singles) and SPEC 46006 (MV-105, 2.4-kV factory three-conductor): visually checked AC conductor resistance at 90°C and inductive reactance at 60 Hz. Coherent conductor-series model; adjacent sequence columns are not mixed into it. Nonshielded construction, nonferrous-conduit arrangement.
+- Prysmian AIRGUARD AIG-0001-1121, pages 13–15: 32 visually checked 5/15/25/35-kV Cu 133%-insulation entries. Published positive-sequence R1/X1 at 105°C, shields short-circuited with no earth return. 90°C is the stated manufacturer estimate of 96% R, unchanged X. **Frequency is an explicit 60-Hz engineering assumption, not a verified table parameter.** The inconsistent 35-kV 750-kcmil entry is omitted without substitution.
+- Prysmian TRXLPE URD PDN-0023-0713, pages 5/9/13/17: 36 visually checked Cu, one-third concentric-neutral, 133%-insulation direct-buried positive-sequence R1/X1 entries at 90°C. The optional UL MV-90 construction is required. **60 Hz and application of companion ampacity geometry/bonding notes to impedance are engineering assumptions:** flat three-single-cable layout, 7.5-inch adjacent centers, short-circuited shields. This is not a newly manufacturer-confirmed impedance geometry or bond-location verification.
+
+All manufacturer micro-ohm/foot data is converted to ohm/1,000 ft by 0.001. No sequence/conductor-column mixing, blanket temperature correction, missing-size interpolation or universal MV impedance is used. Presets reject single phase, parallel sets and mismatched saved geometry/temperature. The 35-kV cable class is distinct from a 34.5-kV system voltage. The 133% insulation-level design basis includes clearing ground faults within one hour; it is not a voltage multiplier or a complete grounding/insulation-coordination determination.
+
+This verifies bounded source data and implementation behavior, not ampacity, accessories, protection, complete cable-system design or a new published-NEC audit. The series-only calculation excludes charging/shunt capacitance; long/lightly loaded runs can require a full network model. Project R/X remains an explicit source-preserving override. Historical saved reports are immutable. Real-browser QA remains unverified; local preview was unreachable. Private Sites deployment is verified separately.
+
+---
+
+# v2.13.0 VA / current conversion update
+
+Added direct VA-to-current and current-to-VA relationships for single-phase and balanced three-phase loads. Three-phase uses line-to-line voltage and exact `Math.sqrt(3)`; VA conversions are independent of power factor. The existing watts conversions and NEC sizing modules retain their calculation rules. The single-phase voltage wording is clarified without changing voltage validation, phase bases or transformer winding treatment.
+
+These are steady-state electrical relationships, not conductor, OCPD, demand or equipment sizing. No additional published-code audit or project-installation verification is implied. Saved historical reports retain their original version, wording and results. Automated regression scope is recorded in `QA-REPORT.md`; real-browser QA remains unverified because the local preview was unreachable.
+
+---
+
 # v2.12.0 voltage and design-input update
 
 The single voltage selector and removal of manual engineering confirmations do not expand the published-code audit. Selected values are design assumptions; actual equipment, cable listing, installation, supervision and ambient conditions remain unverified. No new confirmation is inferred from legacy flags. Numerical constraints and code-model limits remain in force.

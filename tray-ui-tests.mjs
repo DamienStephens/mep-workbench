@@ -24,7 +24,7 @@ assert.match(nodes['#main'].innerHTML,/Triangle · groups of 3/);
 assert.match(nodes['#results'].innerHTML,/result-hero/);
 assert.equal(nodes['#export-pdf'].disabled,false);
 const m=ui.modules.find(m=>m.id==='tray'),result=calc.tray(ui.states.tray),snapshot=ui.makeSnapshot(m,ui.states.tray,result);
-assert.equal(snapshot.appVersion,'2.12.0');assert.match(snapshot.codeEdition,/modeled provisions checked/);
+assert.equal(snapshot.appVersion,'2.14.0');assert.match(snapshot.codeEdition,/modeled provisions checked/);
 assert.match(snapshot.inputRows.find(r=>r.label==='Cable group 1').value,/12 individual cables x 0.75 in. overall diameter/);
 assert.match(summaryFromSnapshot(snapshot),/manufacturer|Manufacturer/);
 assert.match(new TextDecoder().decode(createPDF(snapshot)),/overall diameter/);

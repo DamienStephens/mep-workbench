@@ -55,8 +55,8 @@ test('No matchMedia falls back safely to light', () => {
   const h = harness({matchMedia:false,ready:true}); assert.equal(h.root.dataset.theme,'light'); h.click(); assert.equal(h.root.dataset.theme,'dark');
 });
 test('HTML loads early standalone script and versions all assets', () => {
-  assert.ok(html.indexOf('./theme.js?v=2.12.0') < html.indexOf('./styles.css?v=2.12.0'));
-  assert.match(html, /src="\.\/app\.js\?v=2\.12\.0"/);
+  assert.ok(html.indexOf('./theme.js?v=2.14.0') < html.indexOf('./styles.css?v=2.14.0'));
+  assert.match(html, /src="\.\/app\.js\?v=2\.14\.0"/);
   assert.match(html, /id="theme-toggle"[^>]*type="button"[^>]*aria-label="Dark mode"[^>]*aria-pressed="false"/);
   assert.ok(!html.includes('v1.0.1'));
 });

@@ -1,5 +1,5 @@
 // Local-only, versioned snapshots. Never discard corrupt or full storage silently.
-export const CURRENT_APP_VERSION = '2.12.0';
+export const CURRENT_APP_VERSION = '2.14.0';
 export const RECORDS_KEY = 'mep-workbench-calculations-v1';
 export const MAX_RECORDS = 100;
 const clone = value => JSON.parse(JSON.stringify(value));

@@ -1,7 +1,9 @@
-import { necReference } from './code-references.js?v=2.12.0';
-export { calculateCableTray as tray, migrateCableTrayState, setTrayArrangement, trayPhysicalCount, cableTrayDiameterReferences, cableTraySingleSizes } from './cable-tray.js?v=2.12.0';
-import { formatCurrent, currentResult } from './current-display.js?v=2.12.0';
-import { checkVoltageInput, voltageSources } from './voltage.js?v=2.12.0';
+import { mvPresetImpedance } from './mv-cables.js?v=2.14.0';
+export { mvPresetImpedance, mvCableFamilies, mvCableOptions, mvSizeOptions, mvArrangementOptions, mvTemperatureOptions } from './mv-cables.js?v=2.14.0';
+import { necReference } from './code-references.js?v=2.14.0';
+export { calculateCableTray as tray, migrateCableTrayState, setTrayArrangement, trayPhysicalCount, cableTrayDiameterReferences, cableTraySingleSizes } from './cable-tray.js?v=2.14.0';
+import { formatCurrent, currentResult } from './current-display.js?v=2.14.0';
+import { checkVoltageInput, voltageSources } from './voltage.js?v=2.14.0';
 // Calculation engines are intentionally independent of the UI/module registry.
 // NEC 2023 baseline. General circuits only; see module-specific scope and references.
 const sizes=['14','12','10','8','6','4','3','2','1','1/0','2/0','3/0','4/0','250','300','350','400','500','600','700','750'];
@@ -265,13 +267,29 @@ export function power(p){
  return result([{label:'Real power',value:fmt(watts),unit:'W'},{label:'Apparent power',value:fmt(va),unit:'VA'},{label:'Power factor',value:pf}],['P (W) = S (VA) × PF.','S (VA) = P (W) / PF.'],['Use true power factor for the load. VA is not interchangeable with watts unless PF = 1.'],refs.power);
 }
 export function amps(p){
- if(!hasNumbers(p,['value','voltage','pf']))return fail('Enter finite numeric values for power/current, voltage and power factor.');
- const v=Number(p.value),voltage=Number(p.voltage),pf=Number(p.pf);
- if(v<0||voltage<=0||pf<=0||pf>1)return fail('Enter nonnegative watts/amps, positive voltage and PF greater than 0 and no more than 1.');
+ if(!['wattsToAmps','ampsToWatts','vaToAmps','ampsToVA'].includes(p?.mode))return fail('Choose a conversion.');
+ const apparent=p.mode==='vaToAmps'||p.mode==='ampsToVA';
+ if(!hasNumbers(p,apparent?['value','voltage']:['value','voltage','pf']))return fail(apparent?'Enter finite numeric values for apparent power/current and voltage.':'Enter finite numeric values for power/current, voltage and power factor.');
+ const v=Number(p.value),voltage=Number(p.voltage),pf=apparent?1:Number(p.pf);
+ if(v<0||voltage<=0||(!apparent&&(pf<=0||pf>1)))return fail(apparent?'Enter nonnegative VA/amps and positive voltage.':'Enter nonnegative watts/amps, positive voltage and PF greater than 0 and no more than 1.');
  const voltageCheck=checkVoltageInput(p);if(voltageCheck.error)return fail(voltageCheck.error);
  try{
   const f=phaseFactor(p.phase);
-  if(!['wattsToAmps','ampsToWatts'].includes(p.mode))return fail('Choose a conversion.');
+  if(apparent){
+   // Apparent power uses voltage and line current directly. Hidden/stale PF
+   // never changes this calculation or implies a real-power output.
+   const toAmps=p.mode==='vaToAmps';
+   let a=v===0?0:toAmps?v/(f*voltage):v;
+   if(v>0&&!positiveFinite(a))a=(v/voltage)/f;
+   let va=v===0?0:toAmps?v:f*voltage*v;
+   if(v>0&&!positiveFinite(va))va=(voltage*v)*f;
+   if(![a,va].every(Number.isFinite)||(v>0&&[a,va].some(n=>n<=0)))return fail(numericRangeError);
+   return result([{...currentResult('Current',a),rawValue:a},{label:'Apparent power',value:fmt(va),rawValue:va,unit:'VA'}],
+    [`S (VA) = ${Number(p.phase)===3?'√3 × ':''}V × I.`,`I = S / (${phaseFactorLabel(p.phase)} × ${voltage}).`],
+    [...voltageCheck.warnings,'Balanced three-phase load; use line-to-line voltage for three-phase. For single-phase, use the voltage supplied to the equipment.',
+     ...(voltage>1000?['Medium-voltage input uses the same ideal steady-state power relationship. This does not verify equipment voltage ratings, conductor insulation, ampacity, protection or installation.']:[]),
+     'Apparent power converts directly to/from current without power factor. Real power in watts is not determined. Not a branch-circuit sizing result.'],[...refs.power,...voltageSources]);
+  }
   let a=p.mode==='wattsToAmps'?v/(f*voltage*pf):v;
   if(v>0&&!positiveFinite(a))a=(v/voltage)/f/pf;
   let va=f*voltage*a;
@@ -280,7 +298,7 @@ export function amps(p){
   if(![a,w,va].every(Number.isFinite)||(v>0&&[a,w,va].some(n=>n<=0)))return fail(numericRangeError);
   return result([currentResult('Current',a),{label:'Real input power',value:fmt(w),unit:'W'},{label:'Apparent power',value:fmt(va),unit:'VA'}],
    [`P = ${Number(p.phase)===3?'√3 × ':''}V × I × PF.`,`I = P / (${phaseFactorLabel(p.phase)} × ${voltage} × ${pf}).`],
-   [...voltageCheck.warnings,'Balanced three-phase load; use line-to-line voltage for three-phase. Single-phase uses voltage across the actual load.',
+   [...voltageCheck.warnings,'Balanced three-phase load; use line-to-line voltage for three-phase. For single-phase, use the voltage supplied to the equipment.',
     ...(voltage>1000?['Medium-voltage input uses the same ideal steady-state power relationship. This does not verify equipment voltage ratings, conductor insulation, ampacity, protection or installation.']:[]),
     'Electrical input watts only; mechanical output requires an efficiency adjustment. Not a branch-circuit sizing result.'],[...refs.power,...voltageSources]);
  }catch(e){return fail(e.message);}
@@ -309,11 +327,11 @@ export function drop(p){
  if(p&&typeof p==='object')p={pf:1,raceway:'steel',parallelSets:1,impedanceMode:'table9',...p};
  if(!hasNumbers(p,['length','current','voltage','pf']))return fail('Enter finite numeric values for length, current, starting voltage and power factor.');
  if(!hasNumbers(p,['parallelSets'])||!Number.isInteger(Number(p.parallelSets))||Number(p.parallelSets)<1||Number(p.parallelSets)>20)return fail('Enter 1–20 identical parallel sets, with one complete circuit set in each separate matching raceway.');
- if(!['table9','manual'].includes(p.impedanceMode))return fail('Choose NEC Table 9 or manually entered series impedance.');
- const manual=p.impedanceMode==='manual',L=Number(p.length),I=Number(p.current),V=Number(p.voltage),pf=Number(p.pf),sets=Number(p.parallelSets);
+ if(!['table9','mvPreset','manual'].includes(p.impedanceMode))return fail('Choose NEC Table 9, an MV cable preset, or manually entered series impedance.');
+ const manual=p.impedanceMode==='manual',preset=p.impedanceMode==='mvPreset',L=Number(p.length),I=Number(p.current),V=Number(p.voltage),pf=Number(p.pf),sets=Number(p.parallelSets);
  if(L<0||I<0||V<=0||pf<=0||pf>1)return fail('Use nonnegative one-way length/current, positive starting voltage, and power factor greater than 0 and at most 1.');
  const voltageCheck=checkVoltageInput(p);if(voltageCheck.error)return fail(voltageCheck.error);
- let R,X,impedanceStep;
+ let R,X,impedanceStep,mv;
  if(manual){
   if(!hasNumbers(p,['resistance','reactance']))return fail('Enter actual series resistance R and inductive reactance X in Ω/1,000 ft. Manual impedance has no assumed defaults.');
   R=Number(p.resistance);X=Number(p.reactance);
@@ -321,6 +339,10 @@ export function drop(p){
   if(p.impedanceBasis!==undefined&&typeof p.impedanceBasis!=='string')return fail('Enter the impedance source and design basis as text.');
   const basis=p.impedanceBasis?.trim();
   impedanceStep=`User-entered series impedance: R = ${R} and X = ${X} Ω/1000 ft for one circuit set. ${basis?`Source / design basis: ${basis}.`:'No source / design basis recorded.'} Values are supplied by the designer and are not verified NEC Table 9 coefficients.`;
+ }else if(preset){
+  mv=mvPresetImpedance(p);if(mv.error)return fail(mv.error);
+  R=mv.r;X=mv.x;
+  impedanceStep=`Manufacturer-reference MV preset: R = ${R} and X = ${X} Ω/1000 ft per phase for one balanced three-phase circuit. ${mv.basis} These are cable reference data, not universal MV-90/MV-105 coefficients.`;
  }else{
   const selectedWire=wire(p.size);
   if(!selectedWire)return fail('Use a supported conductor size for the NEC Table 9 model.');
@@ -348,7 +370,7 @@ export function drop(p){
    {label:'Parallel sets',value:sets},
    currentResult('Total actual load current',I,I),
    currentResult('Current per set',perSetCurrent,perSetCurrent),
-   ...(manual?[{label:'Impedance basis',value:'User-entered series R/X; not independently verified'}]:[])
+   ...(manual?[{label:'Impedance basis',value:'User-entered series R/X; not independently verified'}]:preset?[{label:'Cable preset',value:mv.family.label},{label:'Reference family',value:mv.family.reference},{label:'Calculation temperature',value:mv.temperature,unit:'°C'},{label:'Series resistance R',value:R,displayValue:String(R),unit:'Ω/1,000 ft'},{label:'Series reactance X',value:X,displayValue:String(X),unit:'Ω/1,000 ft'},{label:'Impedance basis',value:mv.family.model},{label:'Reference qualification',value:mv.qualification},...(mv.family.assumptionNote?[{label:'Engineering assumptions',value:mv.family.assumptionNote}]:[]),...(mv.family.insulationLevel?[{label:'Cable insulation level',value:mv.family.insulationLevel}]:[]),...(mv.family.applicationNote?[{label:'Cable application basis',value:mv.family.applicationNote}]:[]),...(mv.temperature!==mv.family.temperature?[{label:'Temperature data',value:mv.temperatureBasis}]:[])]:[])
   ],[
    `VD = ${Number(p.phase)===3?'√3':'2'} × I × L / 1000 × (R × PF + X × √(1 − PF²)).`,
    `I = ${formatCurrent(perSetCurrent)} A per set = ${formatCurrent(I)} A total actual load current / ${sets} identical set(s); L = ${L} ft one-way; starting voltage = ${V} V; lagging PF = ${pf}.`,
@@ -356,13 +378,14 @@ export function drop(p){
    `VD = ${fmt(vd)} V; percent = 100 × VD / ${V}. Status uses the unrounded percentage.`,
    'Color guide: green ≤3%; orange >3% and <5%; red ≥5%. Red at exactly 5% marks the selected caution threshold, not proof of a code violation.'
   ],[...voltageCheck.warnings,
-   manual?'Manual impedance is a first-order, series-only steady-state AC estimate. For balanced three-phase, enter the applicable per-phase positive-sequence series R/X of one circuit set; for single-phase, use per-conductor R/X for equal outgoing and return paths. Values must match actual cable construction, operating temperature, frequency, conductor arrangement and shield/sheath bonding. Do not enter loop totals or capacitive reactance.':'AC estimate assumes sinusoidal current, lagging displacement PF, equal outgoing/return conductors for single-phase or balanced three-phase. Table 9 models three single conductors in conduit; single-phase use is an approximation. Leading PF, harmonics and other geometries are not modeled.',
+   preset?'MV preset assumptions: balanced three-phase, one circuit, 60 Hz, the selected cable construction and manufacturer arrangement. MV-90 and MV-105 identify maximum conductor temperature ratings; the separate calculation temperature is not inferred from the rating. Other manufacturers, construction, metallic enclosures, spacing or shield bonding may need different impedance.':manual?'Manual impedance is a first-order, series-only steady-state AC estimate. For balanced three-phase, enter the applicable per-phase positive-sequence series R/X of one circuit set; for single-phase, use per-conductor R/X for equal outgoing and return paths. Values must match actual cable construction, operating temperature, frequency, conductor arrangement and shield/sheath bonding. Do not enter loop totals or capacitive reactance.':'AC estimate assumes sinusoidal current, lagging displacement PF, equal outgoing/return conductors for single-phase or balanced three-phase. Table 9 models three single conductors in conduit; single-phase use is an approximation. Leading PF, harmonics and other geometries are not modeled.',
+   ...(preset?[...(mv.family.applicationNote?['MV preset scope: '+mv.family.applicationNote]:[]),'MV preset scope: series-only steady-state estimate; shunt capacitance and charging current are not modeled. Long or lightly loaded MV runs may need a full cable-system model. Cable voltage class is only a numerical ceiling here: insulation level, grounding, accessories, ampacity and installation suitability remain separate design checks.']:[]),
    ...(manual?['Manual mode does not model shunt capacitance/charging current, unequal phase loading, leading power factor, harmonics, transients or long-line effects. Use a complete system model where these matter, especially for long medium-voltage cable runs. The entered impedance is a design input, not proof of equipment or installation suitability.']:[]),
    ...(sets>1?[manual?'Parallel sets assume equal current sharing and identical per-set series impedance; enter R/X for ONE set and total current across all sets. Cable size, ampacity, conductor matching, mutual effects, spacing, terminations and parallel-installation eligibility are not checked in manual mode.':'Parallel sets assume equal current sharing, with one complete circuit set in each separate matching raceway. Corresponding conductors must have identical length, material, size, insulation and termination method, and identical resistance/reactance in each raceway. Multiple sets sharing a raceway, unequal sets and small-conductor exceptions are not modeled. Verify equipment listed for parallel terminations and the adopted NEC 310.10(G) requirements.']:[]),
    'NEC general-circuit 3% branch / 5% combined feeder-and-branch guidance is generally informational; some applications impose mandatory limits. Verify adopted code and local amendments.',
    '2021 IECC C405.10 limits combined customer-owned service, feeder and branch-circuit voltage drop to not more than 5% where applicable. This single segment cannot establish combined-path compliance. Verify adopted IECC edition and applicability.',
    'Voltage drop does not verify ampacity, OCPD, grounding, motor starting or equipment voltage tolerance.'
-  ],[...refs.drop,...(manual?[{label:'Engineering relationship: steady-state series R/X voltage-drop approximation; manual coefficients are supplied by the designer, not verified NEC table data',url:'https://www.electrical-installation.org/enwiki/Calculation_of_voltage_drop_in_steady_load_conditions',category:'Physics'}]:[necReference('Chapter 9 Table 9: modeled AC resistance and reactance coefficients; geometry assumptions remain explicit', 'impedance', true)]),{label:'2021 IECC C405.10: combined voltage-drop limit',url:'https://codes.iccsafe.org/content/IECC2021V3.0/chapter-4-ce-commercial-energy-efficiency'},...voltageSources]);
+  ],[...refs.drop,...(preset?[mv.source,...(mv.family.applicationSource?[mv.family.applicationSource]:[])]:manual?[{label:'Engineering relationship: steady-state series R/X voltage-drop approximation; manual coefficients are supplied by the designer, not verified NEC table data',url:'https://www.electrical-installation.org/enwiki/Calculation_of_voltage_drop_in_steady_load_conditions',category:'Physics'}]:[necReference('Chapter 9 Table 9: modeled AC resistance and reactance coefficients; geometry assumptions remain explicit', 'impedance', true)]),{label:'2021 IECC C405.10: combined voltage-drop limit',url:'https://codes.iccsafe.org/content/IECC2021V3.0/chapter-4-ce-commercial-energy-efficiency'},...voltageSources]);
  }catch(e){return fail(e.message);}
 }
 export function box(p){if(p&&typeof p==='object')p={terminalBlocks:0,...p};if(!hasNumbers(p,['conductors','grounds','yokes','studs','terminalBlocks','volume']))return fail('Enter finite numeric values for every box count and volume.');const w=wire(p.size),n=Number(p.conductors),g=Number(p.grounds),y=Number(p.yokes),s=Number(p.studs),t=Number(p.terminalBlocks),v=Number(p.volume);if(!w?.volume)return fail('Box fill supports #14 through #6 AWG only.');if(s>2)return fail('Enter 0–2 support fitting types: luminaire stud and/or hickey.');if(!valid(n,g,y,s,t,v)||![n,g,y,s,t].every(x=>Number.isInteger(x)&&x>=0)||v<0)return fail('Enter nonnegative whole-number counts and a nonnegative box volume.');const groundUnits=g===0?0:g<=4?1:1+(g-4)*.25,clampUnits=p.clamps?1:0,supportUnits=s,units=n+groundUnits+clampUnits+2*y+supportUnits+t,required=units*w.volume;if(!units)return fail('Enter at least one box-fill item.');const volumeStatus=allowanceCheckStatus(required,v,'Within available box volume','Exceeds available box volume');return result([{label:'Required box volume',value:fmt(required),unit:'in³',...volumeStatus},{label:'Available box volume',value:v,unit:'in³',...volumeStatus},{label:'Volume check',value:v>=required?'Sufficient volume':'Insufficient volume',...volumeStatus},{label:'Volume allowances',value:fmt(units)},{label:'Volume per allowance',value:w.volume,unit:'in³'}],[`${n} insulated conductor allowances + ${fmt(groundUnits)} grounding allowances + ${clampUnits} clamp allowance + ${2*y} device-yoke allowances + ${supportUnits} support allowance + ${t} terminal-block assembly allowance(s) = ${fmt(units)}.`,`${fmt(units)} × ${w.volume} in³ per ${w.size} AWG = ${fmt(required)} in³.`,`Grounds: first 1–4 = one allowance; each additional = ¼ allowance. Each terminal-block assembly adds one allowance based on the largest conductor terminated; this uniform-size model uses the selected conductor size.`],['NEC 2023 314.16(B)(1)–(6) and Table 314.16(B)(1). Uniform conductor size only. Count conductors entering and terminating or passing through; pigtails wholly within the box normally do not count.','Each standard device yoke counts as two allowances. One or more internal clamps count once; each support fitting type (stud or hickey) counts once, up to two allowances. Ground allowance assumes entering EGCs/bonding jumpers of the selected size. Every terminal-block assembly must be counted, and the selected uniform conductor size must include its largest terminated conductor.','Mixed sizes, long unbroken loops, larger/multiple-gang devices, barriers, luminaire exceptions and conductors larger than #6 require a separate review. Use the marked usable box/extension volume; do not infer volume from outside dimensions.'],refs.box);}

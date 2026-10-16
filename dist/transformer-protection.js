@@ -1,7 +1,7 @@
-import { necReference } from './code-references.js?v=2.12.0';
-import {formatCurrent, currentResult} from './current-display.js?v=2.12.0';
-import { conductors, circuitConfigurations, allowanceCheckStatus } from './calc.js?v=2.12.0';
-import { checkVoltageInput, voltageSources } from './voltage.js?v=2.12.0';
+import { necReference } from './code-references.js?v=2.14.0';
+import {formatCurrent, currentResult} from './current-display.js?v=2.14.0';
+import { conductors, circuitConfigurations, allowanceCheckStatus } from './calc.js?v=2.14.0';
+import { checkVoltageInput, voltageSources } from './voltage.js?v=2.14.0';
 // Bounded NEC 2023-baseline design aid, not installation approval.
 export const transformerOcpdRatings = [15,20,25,30,35,40,45,50,60,70,80,90,100,110,125,150,175,200,225,250,300,350,400,450,500,600,700,800,1000,1200,1600,2000,2500,3000,4000];
 export const secondaryRuleConditions = {

@@ -70,7 +70,7 @@ const baseOutput=evaluateTransformerProtection(presentation.ui.states.protection
 const presentationSnapshot=presentation.ui.makeSnapshot(presentation.ui.modules.find(m=>m.id==='protection'),presentation.ui.states.protection,baseOutput);
 assert.deepEqual(presentationSnapshot.result,baseOutput,'Presentation preserves complete snapshot results, warnings, steps and sources');
 for(const warning of baseOutput.warnings)assert.ok(summaryFromSnapshot(presentationSnapshot).includes(warning),'Report retains complete warning text');
-assert.equal(presentationSnapshot.appVersion,'2.12.0');
+assert.equal(presentationSnapshot.appVersion,'2.14.0');
 assert.equal(baseOutput.results[0].label,'Primary full-load current','UI ordering does not mutate the engine results');
 presentation.change('protection','primary-only','INPUT');assertProtectionGrid(presentation,basicLabels);
 assert.match(visiblePart(presentation.nodes['#results'].innerHTML),/class="warning"[^>]*>Primary-only winding protection/);

@@ -48,7 +48,7 @@ for(const module of ui.modules){
  assert.equal(count(nodes['#results'].innerHTML,sentence),0,'Do not duplicate the shared disclaimer in individual results');
  assert.equal(count(nodes['#results'].innerHTML,obsolete),0,'No contradicted source qualification in current results/details');
  const snapshot=ui.getSnapshot();assert.ok(snapshot,`${module.id} must have a valid default snapshot`);
- assert.equal(snapshot.appVersion,'2.12.0');snapshots.push(snapshot);
+ assert.equal(snapshot.appVersion,'2.14.0');snapshots.push(snapshot);
  const full=summaryFromSnapshot(snapshot),pdf=new TextDecoder().decode(createPDF(snapshot)),clipboard=copySummaryFromSnapshot(snapshot);
  assert.equal(count(full,sentence),1,`${module.id} full report`);
  assert.equal(count(pdf,sentence),1,`${module.id} PDF`);
@@ -99,11 +99,11 @@ assert.equal(JSON.stringify(store.load(archived.id).snapshot),archivedBefore);
 assert.deepEqual(createPDF(store.load(archived.id).snapshot),archivedPDF);
 
 for(const version of ['1.9.9','2.4.0','2.9.99','2.10.0','2.10.1','unversioned'])assert.equal(engineeringReviewNote(version),'');
-for(const version of ['2.10.2','2.10.12','2.12.0','3.0.0'])assert.equal(engineeringReviewNote(version),sentence);
-assert.equal(CURRENT_APP_VERSION,'2.12.0');
+for(const version of ['2.10.2','2.10.12','2.14.0','3.0.0'])assert.equal(engineeringReviewNote(version),sentence);
+assert.equal(CURRENT_APP_VERSION,'2.14.0');
 for(const file of fs.readdirSync('dist').filter(file=>/\.(js|html)$/.test(file))){
  const text=fs.readFileSync(`dist/${file}`,'utf8');
- for(const match of text.matchAll(/\?v=([^'"\s]+)/g))assert.equal(match[1],'2.12.0',`${file} cache version`);
+ for(const match of text.matchAll(/\?v=([^'"\s]+)/g))assert.equal(match[1],'2.14.0',`${file} cache version`);
 }
 
 // Semantic PDF extraction is distinct from unperformed visual QA.

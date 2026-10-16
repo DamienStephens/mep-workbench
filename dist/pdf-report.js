@@ -1,4 +1,4 @@
-import { summaryFromSnapshot, engineeringReviewNote } from './calculation-records.js?v=2.12.0';
+import { summaryFromSnapshot, engineeringReviewNote } from './calculation-records.js?v=2.14.0';
 // A dependency-free PDF 1.4 writer. ASCII output keeps xref byte offsets exact.
 // No network requests, uploaded data, mutable shared buffers or print dialog.
 export function pdfText(value) {

@@ -27,17 +27,17 @@ export function allowedVoltages(phase,system='auto',transformer=false){
  const chosen=system==='auto'?systems:systems.filter(s=>s.id===system);
  return [...new Set(chosen.flatMap(s=>Number(phase)===3?(s.phase===3?[s.ll]:[]):transformer&&s.split?[s.ll]:[s.ll,...(s.ln?[s.ln]:[])]))].sort((a,b)=>a-b);
 }
-export function voltageOptions(phase,system='auto',transformer=false){return allowedVoltages(phase,system,transformer).map(v=>[v,`${v} V ${Number(phase)===3?'line-to-line':transformer?'across full winding':'across load'}`]);}
+export function voltageOptions(phase,system='auto',transformer=false){return allowedVoltages(phase,system,transformer).map(v=>[v,`${v} V${Number(phase)===3?' line-to-line':transformer?' across full winding':''}`]);}
 export function validateVoltage({voltage,phase,system='auto',mode='standard',transformer=false,label='Voltage'}){
  const v=Number(voltage),ph=Number(phase),warnings=[];
  if(![1,3,'1','3'].includes(phase))return {error:'Choose single-phase or three-phase.'};
  if(!['number','string'].includes(typeof voltage)||String(voltage).trim()===''||!Number.isFinite(v)||v<=0)return {error:`${label}: enter a positive finite voltage.`};
  if(!['standard','custom'].includes(mode))return {error:`${label}: choose standard or custom voltage mode.`};
  if(mode==='custom'){
-  warnings.push(`${label}: custom ${v} V, ${ph}-phase calculation using ${ph===3?'line-to-line':transformer?'full-winding':'voltage across the load'} voltage. Equipment, insulation and installation suitability remain project-specific design checks.`);
+  warnings.push(`${label}: custom ${v} V, ${ph}-phase calculation using ${ph===3?'line-to-line':transformer?'full-winding':'applied'} voltage. Equipment, insulation and installation suitability remain project-specific design checks.`);
   if(ph===3&&v===120)warnings.push('120 V three-phase is unusual and is not an ordinary 208Y/120 V system input. A balanced 208Y/120 V three-phase load uses 208 V line-to-line; a 120 V line-neutral load is single-phase.');
  }else{
-  if(!allowedVoltages(ph,system,transformer).includes(v))return {error:`${label}: ${v} V is not a supported nominal ${ph}-phase voltage for the selected system. ${ph===3?'Use line-to-line voltage: a 208Y/120 V system uses 208 V, not 120 V.':'Use voltage across the load, or the full winding for transformer kVA.'} Choose a matching preset or enter a custom voltage.`};
+  if(!allowedVoltages(ph,system,transformer).includes(v))return {error:`${label}: ${v} V is not a supported nominal ${ph}-phase voltage for the selected system. ${ph===3?'Use line-to-line voltage: a 208Y/120 V system uses 208 V, not 120 V.':'Use the voltage supplied to the equipment, or the full winding voltage for transformer kVA.'} Choose a matching preset or enter a custom voltage.`};
  }
  if(transformer&&v>1000)warnings.push('Medium-voltage transformer current is an ideal nameplate calculation only. Transformer protection, conductor ampacity, insulation, clearances and installation rules need separate engineering review.');
  const s=systems.find(s=>s.id===system);

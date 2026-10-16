@@ -49,7 +49,7 @@ assert.match(summaryFromSnapshot(snapshot),/314\.16\(B\)\(1\)/);
 const historical=structuredClone(snapshot);historical.appVersion='2.8.1';historical.codeEdition='NEC 2023 reference target; verification pending against published 2023';historical.result.sources=[{label:'Historical source, unverified',url:'https://link.nfpa.org/free-access/publications/70/2023'}];
 const before=JSON.stringify(historical);summaryFromSnapshot(historical);assert.equal(JSON.stringify(historical),before);
 assert.match(summaryFromSnapshot(historical),/2\.8\.1/);assert.match(summaryFromSnapshot(historical),/Historical source, unverified/);
-assert.equal(CURRENT_APP_VERSION,'2.12.0');assert.equal(necVerificationDate,'2026-10-13');
+assert.equal(CURRENT_APP_VERSION,'2.14.0');assert.equal(necVerificationDate,'2026-10-13');
 assert.equal(necReference('Separate grounding review','grounding').verificationDate,undefined);
 assert.equal(necReference('Table 9','impedance',true).url,necSectionUrls.impedance);
 for(const name of ['app','calc','code-references','ambient-helper','transformer-protection','cable-tray']){

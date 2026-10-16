@@ -1,4 +1,4 @@
-import { necReference, necSectionUrls } from './code-references.js?v=2.12.0';
+import { necReference, necSectionUrls } from './code-references.js?v=2.14.0';
 // Round multiconductor and bounded single-conductor cable-tray screening.
 // All dimensions are actual usable
 // inside inches; cable OD includes insulation/jacket, never bare conductor area.

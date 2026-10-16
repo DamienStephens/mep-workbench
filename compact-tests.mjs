@@ -27,13 +27,13 @@ for(const m of context.ui.modules){
 nodes['#print'].onclick();assert.equal(prints,1);
 handlers.beforeprint();assert.ok(details.every(el=>el.open));
 handlers.beforeprint();handlers.afterprint();assert.deepEqual(details.map(el=>el.open),[false,true,false]);
-assert.ok(html.includes('theme.js?v=2.12.0'));
-assert.ok(html.includes('styles.css?v=2.12.0'));
-assert.ok(html.includes('app.js?v=2.12.0'));
+assert.ok(html.includes('theme.js?v=2.14.0'));
+assert.ok(html.includes('styles.css?v=2.14.0'));
+assert.ok(html.includes('app.js?v=2.14.0'));
 for(const asset of ['calc.js','ambient-helper.js','voltage.js'])assert.ok(source.includes(asset)===false); // imports stripped above
 const original=fs.readFileSync(new URL('./dist/app.js',import.meta.url),'utf8');
-assert.ok(original.includes('calc.js?v=2.12.0'));
-for(const asset of ['ambient-helper.js','voltage.js'])assert.ok(original.includes(`${asset}?v=2.12.0`));
+assert.ok(original.includes('calc.js?v=2.14.0'));
+for(const asset of ['ambient-helper.js','voltage.js'])assert.ok(original.includes(`${asset}?v=2.14.0`));
 assert.ok(css.includes('height:44px;min-width:0;font-size:16px'));
 assert.ok(css.includes('min-height:44px'));
 assert.ok(css.includes('details[data-print-details]::details-content'));
